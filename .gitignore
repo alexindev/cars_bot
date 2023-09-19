@@ -1,2 +1,5 @@
 venv
 .idea
+*.db
+.env
+*.log
