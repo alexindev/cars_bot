@@ -24,8 +24,8 @@ def settings_kb() -> InlineKeyboardMarkup:
     return keyboard.as_markup()
 
 
-def seat_settings() -> InlineKeyboardMarkup:
-    """ Настройки десткого кресла """
+def seat_settings_kb() -> InlineKeyboardMarkup:
+    """ Клавиатура десткого кресла """
     keyboard = InlineKeyboardBuilder()
     keyboard.button(text='Информация', callback_data='seat_info')
     keyboard.button(text='Добавить', callback_data='seat_add')
@@ -35,8 +35,8 @@ def seat_settings() -> InlineKeyboardMarkup:
     return keyboard.as_markup()
 
 
-def payment_settings() -> InlineKeyboardMarkup:
-    """ Настройки режима оплаты """
+def payment_settings_kb() -> InlineKeyboardMarkup:
+    """ Клавиатура режима оплаты """
     keyboard = InlineKeyboardBuilder()
     keyboard.button(text='Наличные', callback_data='cash')
     keyboard.button(text='Безналичные', callback_data='noncash')
@@ -45,11 +45,11 @@ def payment_settings() -> InlineKeyboardMarkup:
     return keyboard.as_markup()
 
 
-def delivery_settings() -> InlineKeyboardMarkup:
-    """ Настройки режима доставки """
+def delivery_settings_kb() -> InlineKeyboardMarkup:
+    """ Клавиатура режима доставки """
     keyboard = InlineKeyboardBuilder()
     keyboard.button(text='Включить', callback_data='delivery_on')
     keyboard.button(text='Выключить', callback_data='delivery_off')
-    keyboard.button(text='Включить', callback_data='cancel')
+    keyboard.button(text='Отмена', callback_data='cancel')
     keyboard.adjust(1)
     return keyboard.as_markup()

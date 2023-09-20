@@ -8,6 +8,7 @@ from aiogram.filters import Command
 async def start_command(message: types.Message):
     """ Команда /start """
     user = base.get_user(chat_id=message.from_user.id)
+    await bot.delete_message(message.from_user.id, message.message_id)
     if user:
         await bot.send_message(message.from_user.id, 'Главная страница', reply_markup=main_kb())
     else:
@@ -18,7 +19,8 @@ async def start_command(message: types.Message):
 
 async def help_command(message: types.Message):
     """ Команда /help """
-    await bot.send_message(message.from_user.id, text='помощь')
+    await bot.delete_message(message.from_user.id, message.message_id)
+    await bot.send_message(message.from_user.id, text='Подсказки')
 
 
 def commands_handlers(dp: Dispatcher):
