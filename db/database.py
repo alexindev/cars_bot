@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
-from models import Base, User
+from db.models import Base, User
 
 import os
 
