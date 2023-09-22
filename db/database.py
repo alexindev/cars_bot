@@ -12,7 +12,13 @@ class Database:
         Base.metadata.create_all(bind=self.engine)
 
     def register_user(self, chat_id: int, phone: str) -> bool:
-        """ Добавить пользователя """
+        """
+        Добавить пользователя
+
+        :param chat_id: ChatID телеграм
+        :param phone: Номер телефона
+        :return: True при успешном добавлении, False если пользователь не найден
+        """
         user = self.get_user(chat_id)
 
         if user:
@@ -24,9 +30,20 @@ class Database:
                 session.commit()
                 return True
 
-    def get_user(self, chat_id: int) -> None | tuple:
-        """ Пполучить пользователя """
+    def get_user(self, chat_id: int) -> dict | None:
+        """
+        Получить пользователя
+
+        :param chat_id: ChatID телеграм
+        :return: Словарь с данными пользователя или None
+        """
         with Session(self.engine) as session:
             stmt = select(User).where(User.chat_id == chat_id)
             result = session.execute(stmt).fetchone()
-            return result
+            if result:
+                user = result[0]
+                return {
+                    'chat_id': user.chat_id,
+                    'phone': user.phone,
+                    'driver_id': user.driver_id,
+                }
