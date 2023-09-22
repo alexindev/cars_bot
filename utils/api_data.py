@@ -58,14 +58,13 @@ class Data:
         }
         return str(data).replace("'", '"')
 
-    def get_driver_id_by_phone(self, phone: str) -> str | None:
+    def get_driver_id_and_car_id(self, phone: str) -> tuple | None:
         """
         Получить идентификатор водителя с помощью телефона
 
         :param phone:str:  Номер телефона
         :return: Идентификатор водителя (str) или None, если не найден
         """
-
         page = 1
         while True:
             try:
@@ -80,10 +79,10 @@ class Data:
 
                 for i in response['driver_profiles']:
                     driver_id = i['driver_profile'].get('id')
+                    car_id = i.get('car', {}).get('id')
                     driver_phone = i['driver_profile'].get('phones')[0]
-
                     if phone == driver_phone:
-                        return driver_id
+                        return driver_id, car_id
 
                 if len(response['driver_profiles']) < 100:
                     logger.error('Нет совпадений по номеру телефона')
@@ -105,6 +104,39 @@ class Data:
         data = {
             "page": page,
             "limit": 100
+        }
+        return str(data).replace("'", '"')
+
+    def get_status(self, driver_id: str, interval: str) -> dict | None:
+        """
+        Статистика заказов для водителя
+
+        :param driver_id: Идентификатор водителя
+        :param interval: Интервал
+        :return: Словарь со статистикой водителя
+        """
+
+        data = self.data_for_get_status(driver_id, interval)
+
+        try:
+            response = requests.post(
+                url='https://fleet.yandex.ru/api/v1/cards/driver/income',
+                headers=self.headers,
+                cookies=self.cookies,
+                data=data
+
+            ).json()
+            return response
+
+        except Exception as e:
+            logger.error(e)
+
+    @staticmethod
+    def data_for_get_status(driver_id: str, interval: str):
+        data = {
+            "driver_id": driver_id,
+            "date_from": datetime.now().strftime(f'%Y-%m-{interval}T00:00:00.000+03:00'),
+            "date_to": datetime.now().strftime('%Y-%m-%dT23:59:59.000+03:00')
         }
         return str(data).replace("'", '"')
 
