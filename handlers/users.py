@@ -10,7 +10,6 @@ from utils.helpers import get_leaderboard_text
 async def authorization_user(message: types.Message):
     """
     Регистрация/авторизация пользователей
-
     Если номер телефона найден в парке, регистрируем
     """
     phone = message.contact.phone_number
@@ -22,9 +21,9 @@ async def authorization_user(message: types.Message):
             '🔍 Проверяем номер телефона...',
             reply_markup=ReplyKeyboardRemove()
         )
-        driver_id = data.get_driver_id_by_phone(phone)
-        if driver_id:
-            base.register_user(message.from_user.id, phone, driver_id)
+        driver = data.get_driver_id_and_car_id(phone=phone)
+        if driver:
+            base.register_user(chat_id=message.from_user.id, phone=phone, driver_id=driver[0], car_id=driver[1])
             # возможна дополнительная логика с оповещение о регистрации
             await bot.delete_message(message.from_user.id, check_message.message_id)
             await bot.send_message(
