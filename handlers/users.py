@@ -1,20 +1,45 @@
 from aiogram import types, Dispatcher, F
 from aiogram.types import ReplyKeyboardRemove
 
-from keyboard.inline import settings_kb, seat_settings_kb, payment_settings_kb, delivery_settings_kb, main_kb, \
-    statistic_kb, cancel_kb
-from loader import bot, base, data
+from keyboard.inline import main_kb, cancel_kb
+from keyboard.standart import register_kb
+from loader import bot, data, base
+from utils.helpers import get_leaderboard_text
 
 
-async def register_user(message: types.Message):
-    """ Регистрация пользователей """
-    if message.contact.phone_number:
-        base.register_user(message.from_user.id, message.contact.phone_number)
-        await bot.send_message(
+async def authorization_user(message: types.Message):
+    """
+    Регистрация/авторизация пользователей
+
+    Если номер телефона найден в парке, регистрируем
+    """
+    phone = message.contact.phone_number
+    if phone:
+        if not phone.startswith('+'):
+            phone = '+' + phone
+        check_message = await bot.send_message(
             message.from_user.id,
-            'Регистрация выполнена, нажмите на команду 👉 /start',
+            '🔍 Проверяем номер телефона...',
             reply_markup=ReplyKeyboardRemove()
         )
+        driver_id = data.get_driver_id_by_phone(phone)
+        if driver_id:
+            base.register_user(message.from_user.id, phone, driver_id)
+            # возможна дополнительная логика с оповещение о регистрации
+            await bot.delete_message(message.from_user.id, check_message.message_id)
+            await bot.send_message(
+                chat_id=message.from_user.id,
+                text='Главное меню',
+                reply_markup=main_kb()
+            )
+        else:
+            await bot.delete_message(message.from_user.id, check_message.message_id)
+            await bot.send_message(
+                chat_id=message.from_user.id,
+                text='❌ Номер в базе не найден\n\n'
+                     '⚡ Зарегистрироваться в парке можно на сайте волжский21.рф или напишите https://t.me/',
+                reply_markup=register_kb
+            )
     else:
         await bot.send_message(message.from_user.id, 'Номер телефона не получен')
 
@@ -29,51 +54,11 @@ async def liderboard(callback: types.CallbackQuery):
     """ Таблица лидеров """
     liders: list = data.get_leaders()
     if liders:
-        text = ''
-        for i, lider in enumerate(liders[:3], start=1):
-            fullname, orders = lider.split()[:2], lider.split()[-1]
-            medal = '🥇' if i == 1 else '🥈' if i == 2 else '🥉'
-            text += f'{medal} {" ".join(fullname)} - {orders} заказов\n'
-
-        if len(liders) >= 4:
-            for lider in liders[3:]:
-                fullname, orders = lider.split()[:2], lider.split()[-1]
-                text += f'🎗 {" ".join(fullname)} - {orders} заказов\n'
-
+        text = get_leaderboard_text(liders)
         await callback.message.edit_text(text, reply_markup=cancel_kb())
     else:
         await callback.message.edit_text('Таблица лидеров на данный момент не сформирована',
                                          reply_markup=cancel_kb())
-    await callback.answer()
-
-
-async def driver_statistic(callback: types.CallbackQuery):
-    """ Статистика водителя """
-    await callback.message.edit_text('Выберите пункт: 👇', reply_markup=statistic_kb())
-    await callback.answer()
-
-
-async def settings_user(callback: types.CallbackQuery):
-    """ Настройки пользователя """
-    await callback.message.edit_text('Выберите пункт: 👇', reply_markup=settings_kb())
-    await callback.answer()
-
-
-async def seat_settings(callback: types.CallbackQuery):
-    """ Настройки детского кресла """
-    await callback.message.edit_text('Выберите действие: 👇', reply_markup=seat_settings_kb())
-    await callback.answer()
-
-
-async def payment_settings(callback: types.CallbackQuery):
-    """ Настройки режима оплаты """
-    await callback.message.edit_text('Выберите действие: 👇', reply_markup=payment_settings_kb())
-    await callback.answer()
-
-
-async def delivery_settings(callback: types.CallbackQuery):
-    """ Настройки режима доставки """
-    await callback.message.edit_text('Выберите действие: 👇', reply_markup=delivery_settings_kb())
     await callback.answer()
 
 
@@ -85,12 +70,7 @@ async def cancel_menu(callback: types.CallbackQuery):
 
 def user_hanlers(dp: Dispatcher):
     """ Регистрация обработчиков """
-    dp.message.register(register_user, F.contact)
+    dp.message.register(authorization_user, F.contact)
     dp.callback_query.register(current_order, F.data == 'current_order')
     dp.callback_query.register(liderboard, F.data == 'leaderboard')
-    dp.callback_query.register(driver_statistic, F.data == 'user_stat')
-    dp.callback_query.register(settings_user, F.data == 'settings')
-    dp.callback_query.register(seat_settings, F.data == 'seat')
-    dp.callback_query.register(payment_settings, F.data == 'payment')
-    dp.callback_query.register(delivery_settings, F.data == 'delivery')
     dp.callback_query.register(cancel_menu, F.data == 'cancel')
