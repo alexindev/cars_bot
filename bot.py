@@ -11,7 +11,6 @@ async def start_bot():
     # dp.startup.register(bot_started)
     # dp.shutdown.register(bot_stopped)
 
-    # await set_commands()
     user_hanlers(dp)
     commands_handlers(dp)
     settings_handlers(dp)
