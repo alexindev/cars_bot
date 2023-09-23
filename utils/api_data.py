@@ -236,3 +236,26 @@ class Data:
             "car_id": f"{car_id}"
         }
         return str(data).replace("'", '"')
+
+    def update_category(self, car_id: str, state: dict) -> bool:
+        """
+        Подключить услуги
+
+        :param car_id: Идентификатор автомобиля
+        :param state: Актуальное состояние
+        :return: True в случае успешной операции
+        """
+        try:
+            response = requests.post(
+                url='https://fleet.yandex.ru/api/v1/cars/update',
+                params={'carId': car_id},
+                headers=self.headers,
+                cookies=self.cookies,
+                json=state
+            )
+            if response.status_code == 200:
+                return True
+            return False
+        except Exception as e:
+            logger.error(e)
+            return False
