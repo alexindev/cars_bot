@@ -97,7 +97,8 @@ def get_state_text(data: dict) -> str:
         'business': 'Бизнес',
         'ultimate': 'Premier',
         'personal_driver': 'Персональный водитель',
-        'maybach': 'Elite'
+        'maybach': 'Elite',
+        'premium_suv': 'Помощь взрослым'
     }
     categories_text = ', '.join([categories.get(i, '-') for i in data.get('categories', [])])
 
