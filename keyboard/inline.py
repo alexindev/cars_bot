@@ -31,8 +31,8 @@ def cancel_kb() -> InlineKeyboardMarkup:
 def statistic_kb() -> InlineKeyboardMarkup:
     """ Клавиатура статистики водителя"""
     keyboard = InlineKeyboardBuilder()
-    keyboard.button(text='День', callback_data='stat_day')
-    keyboard.button(text='Месяц', callback_data='stat_mounth')
+    keyboard.button(text='⏳ День', callback_data='stat_day')
+    keyboard.button(text='📆 Месяц', callback_data='stat_mounth')
     keyboard.button(text='↩', callback_data='cancel')
     keyboard.adjust(2)
     return keyboard.as_markup()
@@ -41,9 +41,11 @@ def statistic_kb() -> InlineKeyboardMarkup:
 def settings_kb() -> InlineKeyboardMarkup:
     """ Меню настроек """
     keyboard = InlineKeyboardBuilder()
+    keyboard.button(text='🔎 Текущее состояние', callback_data='current_state')
     keyboard.button(text='👼 Детское кресло', callback_data='seat')
     keyboard.button(text='💸 Режим оплаты', callback_data='payment')
     keyboard.button(text='📦 Режим доставки', callback_data='delivery')
+    keyboard.button(text='🛣 Межгород', callback_data='sity')
     keyboard.button(text='↩', callback_data='cancel')
     keyboard.adjust(1)
     return keyboard.as_markup()
