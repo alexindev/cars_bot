@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime, date, timedelta
+from datetime import datetime
 from utils.config import headers, cookies
 from logs.config import logger
 from utils.helpers import get_last_monday_sunday
@@ -46,9 +46,9 @@ class Data:
 
         :return: str: Форматированная строка
         """
-        date = datetime.today()
-        date_to = date.strftime('%Y-%m-%d')
-        date_from = date.replace(day=1).strftime('%Y-%m-%d')
+        today = datetime.today()
+        date_to = today.strftime('%Y-%m-%d')
+        date_from = today.replace(day=1).strftime('%Y-%m-%d')
         data = {
             "date_from": f"{date_from}",
             "date_to": f"{date_to}",
@@ -192,5 +192,47 @@ class Data:
                 },
             "limit": 100,
             "page": page
+        }
+        return str(data).replace("'", '"')
+
+    def get_current_state(self, car_id: str) -> dict | None:
+        """
+        Получить текущее состояние водителя
+
+        :param car_id: Идентификатор автомобиля
+        :return: Словарь с информацией о тарифах и услугах
+        """
+        state_data = {}
+        try:
+            response = requests.post(
+                url='https://fleet.yandex.ru/api/v1/cards/car/details',
+                headers=self.headers,
+                cookies=self.cookies,
+                data=self.data_for_current_state(car_id)
+            ).json()
+            state_data['brand'] = response['car'].get('brand')
+            state_data['model'] = response['car'].get('model')
+            state_data['color'] = response['car'].get('color')
+            state_data['color'] = response['car'].get('color')
+            state_data['year'] = response['car'].get('year')
+            state_data['number'] = response['car'].get('number')
+            state_data['callsign'] = response['car'].get('callsign')
+            state_data['vin'] = response['car'].get('vin')
+            state_data['booster_count'] = response['car'].get('booster_count')
+            state_data['registration_cert'] = response['car'].get('registration_cert')
+            state_data['status'] = response['car'].get('status')
+            state_data['transmission'] = response['car'].get('transmission')
+            state_data['categories'] = response['car'].get('categories')
+            state_data['amenities'] = response['car'].get('amenities')
+            state_data['tariffs'] = response['car'].get('tariffs')
+            state_data['mileage'] = response['car'].get('mileage')
+            return state_data
+        except Exception as e:
+            logger.error(e)
+
+    @staticmethod
+    def data_for_current_state(car_id: str):
+        data = {
+            "car_id": f"{car_id}"
         }
         return str(data).replace("'", '"')

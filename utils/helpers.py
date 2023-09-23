@@ -38,7 +38,7 @@ def get_statistic_text(statistic: dict) -> str:
     average_pay = round(statistic['work_time'].get('mph'), 1)
 
     text = (f'✅ Выполненных заказов: {orders}\n'
-            f'⏲ Сумма с таксометра: {price}\n'
+            f'🧾 Сумма с таксометра: {price}\n'
             f'📍 Пробег: {km}\n\n'
             f'💸 Наличными: {cash}\n'
             f'💳 Оплата по карте: {card}\n'
@@ -81,4 +81,36 @@ def get_quality_text(data: dict) -> str:
             f'💔 Заказы с оценкой 1-3 звезды: {data.get("bad_rated_trips")}\n'
             f'🚩 Рейтинг в начале периода: {data.get("rating_start")}\n'
             f'🏁 Рейтинг в конце периода: {data.get("rating_end")}')
+    return text
+
+
+def get_state_text(data: dict) -> str:
+    """ Текст для отображения текущего состояния """
+    categories = {
+        'econom': 'Эконом',
+        'courier': 'Курьер',
+        'intercity': 'Межгород',
+        'express': 'Доставка',
+        'comfort': 'Комфорт',
+        'comfort_plus': 'Комфорт+',
+        'vip': 'VIP',
+        'business': 'Бизнес',
+        'ultimate': 'Premier',
+        'personal_driver': 'Персональный водитель',
+        'maybach': 'Elite'
+    }
+    categories_text = ', '.join([categories.get(i, '-') for i in data.get('categories', [])])
+
+    amenities = {
+        'child_seat': 'Детское кресло',
+        'lightbox': 'LightBox',
+        'sticker': 'Наклейки'
+    }
+    amenities_text = ', '.join([amenities.get(i, '-') for i in data.get('amenities', [])])
+    text = ('ℹ Текущее состояние: \n\n'
+            f'🚘 Автомобиль: {data.get("brand")} {data.get("model")} {data.get("color")} {data.get("number")}\n'
+            f'📅 Дата выпуска: {data.get("year")}\n'
+            f'🔰 VIN: {data.get("vin")}\n'
+            f'➕ Подключенные услуги: {amenities_text}\n'
+            f'🔧 Тарифы: {categories_text}')
     return text
