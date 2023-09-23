@@ -1,7 +1,8 @@
 import requests
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from utils.config import headers, cookies
 from logs.config import logger
+from utils.helpers import get_last_monday_sunday
 
 
 class Data:
@@ -95,7 +96,7 @@ class Data:
     @staticmethod
     def data_for_get_user(page: int) -> str:
         """
-        Payload для метода get_driver_id_by_phone
+        Payload для метода get_driver_id_and_car_id
 
         :param page: int: Номер страницы
         :return: Форматированная строка
@@ -132,7 +133,7 @@ class Data:
             logger.error(e)
 
     @staticmethod
-    def data_for_get_status(driver_id: str, interval: str):
+    def data_for_get_status(driver_id: str, interval: str) -> str:
         data = {
             "driver_id": driver_id,
             "date_from": datetime.now().strftime(f'%Y-%m-{interval}T00:00:00.000+03:00'),
@@ -140,3 +141,56 @@ class Data:
         }
         return str(data).replace("'", '"')
 
+    def get_quality(self, driver_id: str) -> dict | None:
+        """
+        Получить информацию по качеству
+
+        :param driver_id: Идентивикатор водителя
+        :return: Словарь с показателями качества водителя
+        """
+        date_from, date_to = get_last_monday_sunday()
+
+        page = 1
+        while True:
+            data = self.data_for_get_quality(date_from, date_to, page)
+            page += 1
+            try:
+                response = requests.post(
+                    url='https://fleet.yandex.ru/api/reports-api/v1/quality/list',
+                    headers=self.headers,
+                    cookies=self.cookies,
+                    data=data
+                ).json()
+                report_data = {}
+                for i in response['report']:
+                    current_driver_id = i['driver'].get('id')
+                    if driver_id == current_driver_id:
+                        report_data['orders'] = i.get('orders')
+                        report_data['trips'] = i.get('trips')
+                        report_data['perfect_trips'] = i.get('perfect_trips')
+                        report_data['cancel_orders'] = i.get('cancel_orders')
+                        report_data['our_observation'] = i.get('our_observation')
+                        report_data['main_complaints'] = i.get('main_complaints')
+                        report_data['bad_rated_trips'] = i.get('bad_rated_trips')
+                        report_data['rating_start'] = i.get('rating_start')
+                        report_data['rating_end'] = i.get('rating_end')
+                        return report_data
+                    if len(response['report']) < 100:
+                        logger.info('Данные для определения качества не найдены')
+                        return None
+            except Exception as e:
+                logger.error(e)
+                return None
+
+    @staticmethod
+    def data_for_get_quality(date_from: str, date_to: str, page: int) -> str:
+        data = {
+            "period":
+                {
+                    "from": f"{date_from} 00:00",
+                    "to": f"{date_to} 23:59"
+                },
+            "limit": 100,
+            "page": page
+        }
+        return str(data).replace("'", '"')

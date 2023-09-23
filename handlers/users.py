@@ -4,7 +4,7 @@ from aiogram.types import ReplyKeyboardRemove
 from keyboard.inline import main_kb, cancel_kb
 from keyboard.standart import register_kb
 from loader import bot, data, base
-from utils.helpers import get_leaderboard_text
+from utils.helpers import get_leaderboard_text, get_quality_text
 
 
 async def authorization_user(message: types.Message):
@@ -61,6 +61,21 @@ async def liderboard(callback: types.CallbackQuery):
     await callback.answer()
 
 
+async def quality(callback: types.CallbackQuery):
+    """ Показатель качества водителя """
+    await callback.answer()
+    user = base.get_user(chat_id=callback.from_user.id)
+    quality_data = data.get_quality(driver_id=user.get('driver_id'))
+    if quality_data:
+        text = get_quality_text(quality_data)
+        await callback.message.edit_text(text=text, reply_markup=cancel_kb())
+    else:
+        await callback.message.edit_text(
+            text='🙅 Недостаточно данных для определения качества за прошлую неделю',
+            reply_markup=cancel_kb()
+        )
+
+
 async def cancel_menu(callback: types.CallbackQuery):
     """ Возврат в главное меню """
     await callback.message.edit_text('Главная страница', reply_markup=main_kb())
@@ -72,4 +87,5 @@ def user_hanlers(dp: Dispatcher):
     dp.message.register(authorization_user, F.contact)
     dp.callback_query.register(current_order, F.data == 'current_order')
     dp.callback_query.register(liderboard, F.data == 'leaderboard')
+    dp.callback_query.register(quality, F.data == 'quality')
     dp.callback_query.register(cancel_menu, F.data == 'cancel')

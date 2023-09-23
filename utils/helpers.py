@@ -1,7 +1,8 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 
 def get_leaderboard_text(liders: list) -> str:
+    """ Текст для отображения таблицы лидеров """
     text = ''
     for i, lider in enumerate(liders[:3], start=1):
         fullname, orders = lider.split()[:2], lider.split()[-1]
@@ -16,6 +17,7 @@ def get_leaderboard_text(liders: list) -> str:
 
 
 def get_statistic_text(statistic: dict) -> str:
+    """ Текст ответа для отображения статистики """
     orders = statistic['orders'].get('count_completed')
     price = round(statistic['orders'].get('price'), 1)
     km = statistic['orders'].get('mileage')
@@ -49,4 +51,34 @@ def get_statistic_text(statistic: dict) -> str:
             f'💰 ИТОГО: {total}\n\n'
             f'⌚ Часы работы: {work_time}\n'
             f'💸 Среднечасовой заработок: {average_pay}')
+    return text
+
+
+def get_last_monday_sunday() -> tuple:
+    """ Получить даты прыдыдуших понедельник и воскресенье """
+    today = datetime.today()
+    last_monday = today - timedelta(days=today.weekday(), weeks=1)
+    last_sunday = last_monday + timedelta(days=6)
+    date_from = last_monday.strftime('%Y-%m-%d')
+    date_to = last_sunday.strftime('%Y-%m-%d')
+    return date_from, date_to
+
+
+def get_quality_text(data: dict) -> str:
+    """ Текст для отображения качества """
+    our_observation = data.get("our_observation")
+    our_observation_text = ', '.join(our_observation) if our_observation else '-'
+
+    main_contains = data.get("main_complaints")
+    main_contains_str = ', '.join(main_contains) if main_contains else '-'
+    text = ('📅 Показатели качества за прошлую неделю: \n\n'
+            f'👋 Предложено поездок: {data.get("orders")}\n'
+            f'✌ Выполнено поездок: {data.get("trips")}\n'
+            f'⭐ Заказы с оценкой 5 звезд: {data.get("perfect_trips")}\n'
+            f'🤬 Жалобы на отмены поездок: {data.get("cancel_orders")}\n'
+            f'❗ Нарушения стандартов сервиса: {our_observation_text}\n'
+            f'‼ Основные жалобы пассажиров: {main_contains_str}\n'
+            f'💔 Заказы с оценкой 1-3 звезды: {data.get("bad_rated_trips")}\n'
+            f'🚩 Рейтинг в начале периода: {data.get("rating_start")}\n'
+            f'🏁 Рейтинг в конце периода: {data.get("rating_end")}')
     return text
