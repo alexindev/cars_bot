@@ -16,14 +16,23 @@ class Data:
 
         :return: Список лидеров list или None если ошибка
         """
-        data = self.data_for_liders()
-
+        today = datetime.today()
+        date_to = today.strftime('%Y-%m-%d')
+        date_from = today.replace(day=1).strftime('%Y-%m-%d')
+        data = {
+            "date_from": f"{date_from}",
+            "date_to": f"{date_to}",
+            "sort": {
+                "field": "count_orders_completed",
+                "direction": "desc"
+            }
+        }
         try:
             response = requests.post(
                 url='https://fleet.yandex.ru/api/reports-api/v2/summary/drivers/list',
                 headers=self.headers,
                 cookies=self.cookies,
-                data=data
+                json=data
             ).json()
 
             liders = []
@@ -39,26 +48,6 @@ class Data:
             logger.error(e)
             return None
 
-    @staticmethod
-    def data_for_liders() -> str:
-        """
-        Payload для get_leaders
-
-        :return: str: Форматированная строка
-        """
-        today = datetime.today()
-        date_to = today.strftime('%Y-%m-%d')
-        date_from = today.replace(day=1).strftime('%Y-%m-%d')
-        data = {
-            "date_from": f"{date_from}",
-            "date_to": f"{date_to}",
-            "sort": {
-                "field": "count_orders_completed",
-                "direction": "desc"
-            }
-        }
-        return str(data).replace("'", '"')
-
     def get_driver_id_and_car_id(self, phone: str) -> tuple | None:
         """
         Получить идентификатор водителя с помощью телефона
@@ -69,12 +58,14 @@ class Data:
         page = 1
         while True:
             try:
-                data = self.data_for_get_user(page)
                 response = requests.post(
                     url='https://fleet.yandex.ru/api/v1/drivers/list',
                     headers=self.headers,
                     cookies=self.cookies,
-                    data=data
+                    json={
+                        "page": page,
+                        "limit": 100
+                    }
 
                 ).json()
 
@@ -93,21 +84,6 @@ class Data:
                 logger.error(e)
                 return None
 
-    @staticmethod
-    def data_for_get_user(page: int) -> str:
-        """
-        Payload для метода get_driver_id_and_car_id
-
-        :param page: int: Номер страницы
-        :return: Форматированная строка
-        """
-
-        data = {
-            "page": page,
-            "limit": 100
-        }
-        return str(data).replace("'", '"')
-
     def get_status(self, driver_id: str, interval: str) -> dict | None:
         """
         Статистика заказов для водителя
@@ -117,14 +93,18 @@ class Data:
         :return: Словарь со статистикой водителя
         """
 
-        data = self.data_for_get_status(driver_id, interval)
+        data = {
+            "driver_id": driver_id,
+            "date_from": datetime.now().strftime(f'%Y-%m-{interval}T00:00:00.000+03:00'),
+            "date_to": datetime.now().strftime('%Y-%m-%dT23:59:59.000+03:00')
+        }
 
         try:
             response = requests.post(
                 url='https://fleet.yandex.ru/api/v1/cards/driver/income',
                 headers=self.headers,
                 cookies=self.cookies,
-                data=data
+                json=data
 
             ).json()
             return response
@@ -132,14 +112,44 @@ class Data:
         except Exception as e:
             logger.error(e)
 
-    @staticmethod
-    def data_for_get_status(driver_id: str, interval: str) -> str:
-        data = {
-            "driver_id": driver_id,
-            "date_from": datetime.now().strftime(f'%Y-%m-{interval}T00:00:00.000+03:00'),
-            "date_to": datetime.now().strftime('%Y-%m-%dT23:59:59.000+03:00')
-        }
-        return str(data).replace("'", '"')
+    def get_canceled_trip(self, driver_id: str, date_from: str, date_to: str) -> list:
+        """
+        Получить статистику по самолетам и отмены
+
+        :param date_from: Начало периода
+        :param date_to: Конец периода
+        :param driver_id: Идентификатор водителя
+        :return:
+        """
+        try:
+            data = {
+                "driver_id": driver_id,
+                "date_type": "booked_at",
+                "date_from": f"{date_from}T00:00:00.000+03:00",
+                "date_to": f"{date_to}T23:59:00.000+03:00",
+            }
+            result = []
+            while True:
+                response = requests.post(
+                    url='https://fleet.yandex.ru/api/reports-api/v1/orders/list',
+                    headers=self.headers,
+                    cookies=self.cookies,
+                    json=data
+                ).json()
+
+                if not response.get('orders'):
+                    return []
+
+                data['cursor'] = response.get('cursor')
+
+                for i in response['orders']:
+                    if i.get('status') == 'cancelled':
+                        result.append(i.get('cancellation_description'))
+                if len(response.get('orders')) < 40:
+                    return result
+
+        except Exception as e:
+            logger.error(e)
 
     def get_quality(self, driver_id: str) -> dict | None:
         """
@@ -152,14 +162,22 @@ class Data:
 
         page = 1
         while True:
-            data = self.data_for_get_quality(date_from, date_to, page)
+            data = {
+                "period":
+                    {
+                        "from": f"{date_from} 00:00",
+                        "to": f"{date_to} 23:59"
+                    },
+                "limit": 100,
+                "page": page
+            }
             page += 1
             try:
                 response = requests.post(
                     url='https://fleet.yandex.ru/api/reports-api/v1/quality/list',
                     headers=self.headers,
                     cookies=self.cookies,
-                    data=data
+                    json=data
                 ).json()
                 report_data = {}
                 for i in response['report']:
@@ -182,19 +200,6 @@ class Data:
                 logger.error(e)
                 return None
 
-    @staticmethod
-    def data_for_get_quality(date_from: str, date_to: str, page: int) -> str:
-        data = {
-            "period":
-                {
-                    "from": f"{date_from} 00:00",
-                    "to": f"{date_to} 23:59"
-                },
-            "limit": 100,
-            "page": page
-        }
-        return str(data).replace("'", '"')
-
     def get_current_state(self, car_id: str) -> dict | None:
         """
         Получить текущее состояние водителя
@@ -208,7 +213,7 @@ class Data:
                 url='https://fleet.yandex.ru/api/v1/cards/car/details',
                 headers=self.headers,
                 cookies=self.cookies,
-                data=self.data_for_current_state(car_id)
+                json={"car_id": f"{car_id}"}
             ).json()
             state_data['brand'] = response['car'].get('brand')
             state_data['model'] = response['car'].get('model')
@@ -226,20 +231,15 @@ class Data:
             state_data['amenities'] = response['car'].get('amenities')
             state_data['tariffs'] = response['car'].get('tariffs')
             state_data['mileage'] = response['car'].get('mileage')
+            if 'chairs' in response['car']:
+                state_data['chairs'] = response['car'].get('chairs')
             return state_data
         except Exception as e:
             logger.error(e)
 
-    @staticmethod
-    def data_for_current_state(car_id: str):
-        data = {
-            "car_id": f"{car_id}"
-        }
-        return str(data).replace("'", '"')
-
     def update_category(self, car_id: str, state: dict) -> bool:
         """
-        Подключить услуги
+        Менеджер услуг
 
         :param car_id: Идентификатор автомобиля
         :param state: Актуальное состояние
@@ -258,4 +258,3 @@ class Data:
             return False
         except Exception as e:
             logger.error(e)
-            return False
