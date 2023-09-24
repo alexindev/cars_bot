@@ -16,26 +16,26 @@ def get_leaderboard_text(liders: list) -> str:
     return text
 
 
-def get_statistic_text(statistic: dict) -> str:
+def get_statistic_text(stat: dict, cancelled: list) -> str:
     """ Текст ответа для отображения статистики """
-    orders = statistic['orders'].get('count_completed')
-    price = round(statistic['orders'].get('price'), 1)
-    km = statistic['orders'].get('mileage')
+    orders = stat['orders'].get('count_completed')
+    price = round(stat['orders'].get('price'), 1)
+    km = stat['orders'].get('mileage')
     if km != 0:
         km = round(km / 1000, 1)
 
-    cash = round(statistic['balances'].get('cash_collected'), 1)
-    card = round(statistic['balances'].get('platform_card'), 1)
-    corp_pay = round(statistic['balances'].get('platform_corporate'), 1)
-    tips = round(statistic['balances'].get('platform_tip'), 1)
-    promo = round(statistic['balances'].get('platform_promotion'), 1)
-    bonus = round(statistic['balances'].get('platform_bonus'), 1)
-    ya_fees = round(statistic['balances'].get('platform_fees'), 1)
-    park_fees = round(statistic['balances'].get('partner_fees'), 1)
-    total = round(statistic['balances'].get('total'), 1)
+    cash = round(stat['balances'].get('cash_collected'), 1)
+    card = round(stat['balances'].get('platform_card'), 1)
+    corp_pay = round(stat['balances'].get('platform_corporate'), 1)
+    tips = round(stat['balances'].get('platform_tip'), 1)
+    promo = round(stat['balances'].get('platform_promotion'), 1)
+    bonus = round(stat['balances'].get('platform_bonus'), 1)
+    ya_fees = round(stat['balances'].get('platform_fees'), 1)
+    park_fees = round(stat['balances'].get('partner_fees'), 1)
+    total = round(stat['balances'].get('total'), 1)
 
-    work_time = timedelta(seconds=statistic['work_time'].get('seconds'))
-    average_pay = round(statistic['work_time'].get('mph'), 1)
+    work_time = timedelta(seconds=stat['work_time'].get('seconds'))
+    average_pay = round(stat['work_time'].get('mph'), 1)
 
     text = (f'✅ Выполненных заказов: {orders}\n'
             f'🧾 Сумма с таксометра: {price}\n'
@@ -45,7 +45,11 @@ def get_statistic_text(statistic: dict) -> str:
             f'💼 Корпоративная оплата: {corp_pay}\n'
             f'🤑 Чаевые: {tips}\n'
             f'💎 Промоакции: {promo}\n'
-            f'🎁 Бонус: {bonus}\n'
+            f'🎁 Бонус: {bonus}\n\n'
+            f'🙅 Заказ отменен клиентом: {cancelled.count("Заказ отменён клиентом")}\n'
+            f'🙅‍♂ Водитель отказался от заказа: {cancelled.count("Водитель отказался от заказа")}\n'
+            f'🤷‍♀ Не смогли назначить заказ на водителя: {cancelled.count("Не смогли назначить заказ на водителя")}\n'
+            f'✈ Самолет: {cancelled.count("seentimeout")}\n\n'
             f'🔻 Комиссия платформы: {ya_fees}\n'
             f'🔻 Комиссия парка: {park_fees}\n'
             f'💰 ИТОГО: {total}\n\n'
@@ -105,7 +109,8 @@ def get_state_text(data: dict) -> str:
     amenities = {
         'child_seat': 'Детское кресло',
         'lightbox': 'LightBox',
-        'sticker': 'Наклейки'
+        'sticker': 'Наклейки',
+        'delivery': 'Доставка'
     }
     amenities_text = ', '.join([amenities.get(i, '-') for i in data.get('amenities', [])])
     text = ('ℹ Текущее состояние: \n\n'
@@ -115,3 +120,19 @@ def get_state_text(data: dict) -> str:
             f'➕ Подключенные услуги: {amenities_text}\n'
             f'🔧 Тарифы: {categories_text}')
     return text
+
+
+def get_seat_text(seats: list) -> str:
+    """ Текст для информации о детских креслах """
+    text = []
+    for i in seats:
+        if i[-1] == '0':
+            text.append('0-9 месяцев')
+        elif i[-1] == '1':
+            text.append('От 9 месяцев до 3 лет')
+        elif i[-1] == '2':
+            text.append('От 3 до 7 лет')
+        else:
+            text.append('От 7 до 12 лет')
+    return f'👀 Добавлены кресла категории: {", ".join(text)}'
+
