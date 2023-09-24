@@ -2,4 +2,6 @@ venv
 .idea
 *.db
 .env
+cookies.pkl
 *.log
+*.json
