@@ -8,10 +8,10 @@ import os
 class Database:
     """ Работа с базой данных """
     def __init__(self):
-        self.engine = create_engine(os.getenv('SQLALCHEMY_ENGINE'), echo=True)
+        self.engine = create_engine(os.getenv('SQLALCHEMY_ENGINE'))
         Base.metadata.create_all(bind=self.engine)
 
-    def register_user(self, chat_id: int, phone: str, driver_id: str, car_id: str) -> bool:
+    def register_user(self, chat_id: int, phone: str, driver_id: str, car_id: str, is_staff: bool = False) -> bool:
         """
         Добавить пользователя
 
@@ -19,6 +19,7 @@ class Database:
         :param phone: Номер телефона
         :param driver_id: Идентификатор водителя
         :param car_id: Идентификатор автомобиля
+        :param is_staff: Доступ к админке
         :return: True при успешном добавлении, False если пользователь не найден
         """
         user = self.get_user(phone=phone)
@@ -28,7 +29,7 @@ class Database:
             return False
         else:
             with Session(self.engine) as session:
-                session.add(User(chat_id=chat_id, phone=phone, driver_id=driver_id, car_id=car_id))
+                session.add(User(chat_id=chat_id, phone=phone, driver_id=driver_id, car_id=car_id, is_staff=is_staff))
                 session.commit()
                 return True
 
@@ -52,5 +53,6 @@ class Database:
                     'chat_id': user.chat_id,
                     'phone': user.phone,
                     'driver_id': user.driver_id,
-                    'car_id': user.car_id
+                    'car_id': user.car_id,
+                    'is_staf': user.is_staff
                 }
