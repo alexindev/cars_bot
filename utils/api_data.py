@@ -47,7 +47,7 @@ class Data:
                 liders.append(lider)
             return liders
         except Exception as e:
-            logger.error(e)
+            logger.exception(e)
             return None
 
     def get_driver_id_and_car_id(self, phone: str) -> tuple | None:
@@ -79,11 +79,11 @@ class Data:
                         return driver_id, car_id
 
                 if len(response['driver_profiles']) < 100:
-                    logger.error('Нет совпадений по номеру телефона')
+                    logger.exception('Нет совпадений по номеру телефона')
                     return None
                 page += 1
             except Exception as e:
-                logger.error(e)
+                logger.exception(e)
                 return None
 
     def get_status(self, driver_id: str, interval: str) -> dict | None:
@@ -112,7 +112,7 @@ class Data:
             return response
 
         except Exception as e:
-            logger.error(e)
+            logger.exception(e)
 
     def get_canceled_trip(self, driver_id: str, date_from: str, date_to: str) -> list:
         """
@@ -151,25 +151,22 @@ class Data:
                     return result
 
         except Exception as e:
-            logger.error(e)
+            logger.exception(e)
 
     def get_quality(self, driver_id: str) -> dict | None:
         """
         Получить информацию по качеству
 
-        :param driver_id: Идентивикатор водителя
+        :param driver_id: Идентификатор водителя
         :return: Словарь с показателями качества водителя
         """
         monday_1, sunday_1, monday_2, sunday_2 = get_last_monday_sunday()
         page = 1
         last = True
-        last_count = 0
         date_from = monday_1
         date_to = sunday_1
+        lap = 1
         while True:
-            if last_count:
-                logger.info('За период 2 недель данных нет')
-                return
             data = self.data_for_get_quality(date_from, date_to, page=page)
             try:
                 if not last:
@@ -183,10 +180,11 @@ class Data:
                     cookies=self.cookies,
                     json=data
                 ).json()
-
                 if not response.get('report'):
+                    if lap == 2:
+                        return
                     page = 1
-                    last_count += 1
+                    lap += 1
                     last = False
                     logger.info('Данные для отчета за прошлую неделю еще не сформированы')
                     continue
@@ -212,7 +210,7 @@ class Data:
                     if not response.get('report'):
                         logger.info('Данные для определения качества не найдены')
             except Exception as e:
-                logger.error(e)
+                logger.exception(e)
                 return
 
     @staticmethod
@@ -263,7 +261,7 @@ class Data:
                 state_data['chairs'] = response['car'].get('chairs')
             return state_data
         except Exception as e:
-            logger.error(e)
+            logger.exception(e)
 
     def update_category(self, car_id: str, state: dict) -> bool:
         """
@@ -285,7 +283,7 @@ class Data:
                 return True
             return False
         except Exception as e:
-            logger.error(e)
+            logger.exception(e)
 
     def set_payment(self, driver_id: str, limit: str) -> bool:
         """
@@ -300,20 +298,23 @@ class Data:
             return False
 
         data['account']['balance_limit'] = limit
-        response = requests.put(
-            url='https://fleet-api.taxi.yandex.net/v2/parks/contractors/driver-profile',
-            headers={
-                'X-Client-ID': os.getenv('X_CLIENT_ID'),
-                'X-Api-Key': os.getenv('X_API_KEY'),
-                'X-Park-ID': os.getenv('PARK_ID')
-            },
-            json=data,
-            params={
-                'contractor_profile_id': driver_id
-            }
-        )
-        if response.status_code == 200:
-            return True
+        try:
+            response = requests.put(
+                url='https://fleet-api.taxi.yandex.net/v2/parks/contractors/driver-profile',
+                headers={
+                    'X-Client-ID': os.getenv('X_CLIENT_ID'),
+                    'X-Api-Key': os.getenv('X_API_KEY'),
+                    'X-Park-ID': os.getenv('PARK_ID')
+                },
+                json=data,
+                params={
+                    'contractor_profile_id': driver_id
+                }
+            )
+            if response.status_code == 200:
+                return True
+        except Exception as e:
+            logger.exception(e)
 
     @staticmethod
     def get_driver_profile_data(driver_id: str) -> dict:
@@ -337,5 +338,5 @@ class Data:
             ).json()
             return response
         except Exception as e:
-            logger.error(e)
+            logger.exception(e)
 
