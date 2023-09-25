@@ -1,3 +1,5 @@
+import os
+
 import requests
 from datetime import datetime
 from utils.config import headers, cookies
@@ -158,28 +160,40 @@ class Data:
         :param driver_id: Идентивикатор водителя
         :return: Словарь с показателями качества водителя
         """
-        date_from, date_to = get_last_monday_sunday()
-
+        monday_1, sunday_1, monday_2, sunday_2 = get_last_monday_sunday()
         page = 1
+        last = True
+        last_count = 0
+        date_from = monday_1
+        date_to = sunday_1
         while True:
-            data = {
-                "period":
-                    {
-                        "from": f"{date_from} 00:00",
-                        "to": f"{date_to} 23:59"
-                    },
-                "limit": 100,
-                "page": page
-            }
-            page += 1
+            if last_count:
+                logger.info('За период 2 недель данных нет')
+                return
+            data = self.data_for_get_quality(date_from, date_to, page=page)
             try:
+                if not last:
+                    date_from = monday_2
+                    date_to = sunday_2
+                    data = self.data_for_get_quality(date_from, date_to, page=page)
+
                 response = requests.post(
                     url='https://fleet.yandex.ru/api/reports-api/v1/quality/list',
                     headers=self.headers,
                     cookies=self.cookies,
                     json=data
                 ).json()
+
+                if not response.get('report'):
+                    page = 1
+                    last_count += 1
+                    last = False
+                    logger.info('Данные для отчета за прошлую неделю еще не сформированы')
+                    continue
+
                 report_data = {}
+                page += 1
+
                 for i in response['report']:
                     current_driver_id = i['driver'].get('id')
                     if driver_id == current_driver_id:
@@ -192,13 +206,27 @@ class Data:
                         report_data['bad_rated_trips'] = i.get('bad_rated_trips')
                         report_data['rating_start'] = i.get('rating_start')
                         report_data['rating_end'] = i.get('rating_end')
+                        report_data['date_from'] = date_from
+                        report_data['date_to'] = date_to
                         return report_data
-                    if len(response['report']) < 100:
+                    if not response.get('report'):
                         logger.info('Данные для определения качества не найдены')
-                        return None
             except Exception as e:
                 logger.error(e)
-                return None
+                return
+
+    @staticmethod
+    def data_for_get_quality(date_from: str, date_to: str, page: int) -> dict:
+        data = {
+            "period":
+                {
+                    "from": f"{date_from} 00:00",
+                    "to": f"{date_to} 23:59"
+                },
+            "limit": 100,
+            "page": page
+        }
+        return data
 
     def get_current_state(self, car_id: str) -> dict | None:
         """
@@ -258,3 +286,56 @@ class Data:
             return False
         except Exception as e:
             logger.error(e)
+
+    def set_payment(self, driver_id: str, limit: str) -> bool:
+        """
+        Установить лимит водителя
+
+        :param limit: '0' - наличный расчет, '150000' - безналичный расчет
+        :param driver_id: Идентификатор водителя
+        :return:
+        """
+        data = self.get_driver_profile_data(driver_id)
+        if not data:
+            return False
+
+        data['account']['balance_limit'] = limit
+        response = requests.put(
+            url='https://fleet-api.taxi.yandex.net/v2/parks/contractors/driver-profile',
+            headers={
+                'X-Client-ID': os.getenv('X_CLIENT_ID'),
+                'X-Api-Key': os.getenv('X_API_KEY'),
+                'X-Park-ID': os.getenv('PARK_ID')
+            },
+            json=data,
+            params={
+                'contractor_profile_id': driver_id
+            }
+        )
+        if response.status_code == 200:
+            return True
+
+    @staticmethod
+    def get_driver_profile_data(driver_id: str) -> dict:
+        """
+        Получить информацию о водителе
+
+        :param driver_id: Идентификатор водителя
+        :return: Словарь с параметрами для обновления данных
+        """
+        try:
+            response = requests.get(
+                url=f'https://fleet-api.taxi.yandex.net/v2/parks/contractors/driver-profile',
+                headers={
+                    'X-Client-ID': os.getenv('X_CLIENT_ID'),
+                    'X-Api-Key': os.getenv('X_API_KEY'),
+                    'X-Park-ID': os.getenv('PARK_ID')
+                },
+                params={
+                    'contractor_profile_id': driver_id
+                }
+            ).json()
+            return response
+        except Exception as e:
+            logger.error(e)
+
