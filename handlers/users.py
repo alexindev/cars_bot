@@ -5,6 +5,7 @@ from keyboard.inline import main_kb, cancel_kb
 from keyboard.standart import register_kb
 from loader import bot, data, base
 from utils.helpers import get_leaderboard_text, get_quality_text
+from utils.text_answer import main_menu
 
 
 async def authorization_user(message: types.Message):
@@ -81,7 +82,7 @@ async def quality(callback: types.CallbackQuery):
 
 async def cancel_menu(callback: types.CallbackQuery):
     """ Возврат в главное меню """
-    await callback.message.edit_text('Главная страница', reply_markup=main_kb())
+    await callback.message.edit_text(main_menu, reply_markup=main_kb())
     await callback.answer()
 
 
