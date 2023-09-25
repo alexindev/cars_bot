@@ -43,7 +43,7 @@ def settings_kb() -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardBuilder()
     keyboard.button(text='🔎 Текущее состояние', callback_data='current_state')
     # keyboard.button(text='👼 Детское кресло', callback_data='seat')
-    # keyboard.button(text='💸 Режим оплаты', callback_data='payment')
+    keyboard.button(text='💸 Режим оплаты', callback_data='payment')
     keyboard.button(text='📦 Режим доставки', callback_data='delivery')
     keyboard.button(text='🛣 Межгород', callback_data='incity')
     keyboard.button(text='↩', callback_data='cancel')
@@ -77,8 +77,8 @@ def seats_kb(param: str) -> InlineKeyboardMarkup:
 def payment_settings_kb() -> InlineKeyboardMarkup:
     """ Клавиатура режима оплаты """
     keyboard = InlineKeyboardBuilder()
-    keyboard.button(text='Наличные', callback_data='cash')
-    keyboard.button(text='Безналичные', callback_data='noncash')
+    keyboard.button(text='💵 Наличные', callback_data='cash_on')
+    keyboard.button(text='💳 Безналичные', callback_data='cash_off')
     keyboard.button(text='↩', callback_data='cancel')
     keyboard.adjust(1)
     return keyboard.as_markup()
