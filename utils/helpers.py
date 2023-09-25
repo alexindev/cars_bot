@@ -48,8 +48,7 @@ def get_statistic_text(stat: dict, cancelled: list) -> str:
             f'🎁 Бонус: {bonus}\n\n'
             f'🙅 Заказ отменен клиентом: {cancelled.count("Заказ отменён клиентом")}\n'
             f'🙅‍♂ Водитель отказался от заказа: {cancelled.count("Водитель отказался от заказа")}\n'
-            f'🤷‍♀ Не смогли назначить заказ на водителя: {cancelled.count("Не смогли назначить заказ на водителя")}\n'
-            f'✈ Самолет: {cancelled.count("seentimeout")}\n\n'
+            f'✈ Самолет: {cancelled.count("Не смогли назначить заказ на водителя")}\n\n'
             f'🔻 Комиссия платформы: {ya_fees}\n'
             f'🔻 Комиссия парка: {park_fees}\n'
             f'💰 ИТОГО: {total}\n\n'
@@ -63,9 +62,16 @@ def get_last_monday_sunday() -> tuple:
     today = datetime.today()
     last_monday = today - timedelta(days=today.weekday(), weeks=1)
     last_sunday = last_monday + timedelta(days=6)
-    date_from = last_monday.strftime('%Y-%m-%d')
-    date_to = last_sunday.strftime('%Y-%m-%d')
-    return date_from, date_to
+
+    monday_2 = today - timedelta(days=today.weekday(), weeks=2)
+    sunday_2 = monday_2 + timedelta(days=6)
+
+    last_monday = last_monday.strftime('%Y-%m-%d')
+    last_sunday = last_sunday.strftime('%Y-%m-%d')
+
+    monday_2 = monday_2.strftime('%Y-%m-%d')
+    sunday_2 = sunday_2.strftime('%Y-%m-%d')
+    return last_monday, last_sunday, monday_2, sunday_2
 
 
 def get_quality_text(data: dict) -> str:
@@ -75,7 +81,11 @@ def get_quality_text(data: dict) -> str:
 
     main_contains = data.get("main_complaints")
     main_contains_str = ', '.join(main_contains) if main_contains else '-'
-    text = ('📅 Показатели качества за прошлую неделю: \n\n'
+
+    date_from = data.get('date_from').split('-')
+    date_to = data.get('date_to').split('-')
+
+    text = (f'📅 Показатели качества за период {date_from[2]}/{date_from[1]} - {date_to[2]}/{date_to[1]}: \n\n'
             f'👋 Предложено поездок: {data.get("orders")}\n'
             f'✌ Выполнено поездок: {data.get("trips")}\n'
             f'⭐ Заказы с оценкой 5 звезд: {data.get("perfect_trips")}\n'

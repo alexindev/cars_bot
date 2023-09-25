@@ -65,15 +65,18 @@ async def quality(callback: types.CallbackQuery):
     """ Показатель качества водителя """
     await callback.answer()
     user = base.get_user(chat_id=callback.from_user.id)
-    quality_data = data.get_quality(driver_id=user.get('driver_id'))
-    if quality_data:
-        text = get_quality_text(quality_data)
-        await callback.message.edit_text(text=text, reply_markup=cancel_kb())
+    if user:
+        quality_data = data.get_quality(driver_id=user.get('driver_id'))
+        if quality_data:
+            text = get_quality_text(quality_data)
+            await callback.message.edit_text(text=text, reply_markup=cancel_kb())
+        else:
+            await callback.message.edit_text(
+                text='🙅 Недостаточно данных для определения качества за прошлую неделю',
+                reply_markup=cancel_kb()
+            )
     else:
-        await callback.message.edit_text(
-            text='🙅 Недостаточно данных для определения качества за прошлую неделю',
-            reply_markup=cancel_kb()
-        )
+        await callback.message.edit_text('❌ Сначала зарегистрируйтесь /start', reply_markup=cancel_kb())
 
 
 async def cancel_menu(callback: types.CallbackQuery):

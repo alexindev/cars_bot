@@ -30,7 +30,7 @@ async def seat_info(callback: types.CallbackQuery):
                 await callback.message.edit_text('🗿 Ни одного детского кресла не добавлено',
                                                  reply_markup=cancel_kb())
     else:
-        await callback.message.edit_text('❌ Ошибка получения пользователя', reply_markup=cancel_kb())
+        await callback.message.edit_text('❌ Сначала зарегистрируйтесь /start', reply_markup=cancel_kb())
 
 
 async def seat_add(callback: types.CallbackQuery):
@@ -65,4 +65,5 @@ async def seat_update(callback: types.CallbackQuery):
         else:
             await callback.message.edit_text('❌ Ошибка при выполнении операции', reply_markup=cancel_kb())
     else:
-        await callback.message.edit_text('❌ Ошибка получения пользователя', reply_markup=cancel_kb())
+        await callback.message.edit_text('❌ Сначала зарегистрируйтесь /start', reply_markup=cancel_kb())
+

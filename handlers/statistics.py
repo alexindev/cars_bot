@@ -38,7 +38,7 @@ async def detail_statistic(callback: types.CallbackQuery):
         else:
             logger.error('Данные по статистике на найдены')
     else:
-        logger.error('Пользователь не найден')
+        await callback.message.edit_text('❌ Сначала зарегистрируйтесь /start', reply_markup=cancel_kb())
 
 
 def statistics_handlers(dp: Dispatcher):
