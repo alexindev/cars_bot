@@ -1,6 +1,6 @@
 from aiogram import types, Dispatcher, F
 from loader import data, base
-from keyboard.inline import settings_kb, delivery_settings_kb, cancel_kb, incity_settings_kb
+from keyboard.inline import settings_kb, delivery_settings_kb, cancel_kb, incity_settings_kb, payment_settings_kb
 from utils.helpers import get_state_text
 
 
@@ -23,7 +23,33 @@ async def current_state(callback: types.CallbackQuery):
         else:
             await callback.message.edit_text('❌ Ошибка получения данных', reply_markup=cancel_kb())
     else:
-        await callback.message.edit_text('❌ Ошибка получения пользователя', reply_markup=cancel_kb())
+        await callback.message.edit_text('❌ Сначала зарегистрируйтесь /start', reply_markup=cancel_kb())
+
+
+async def payment_settings(callback: types.CallbackQuery):
+    """ Настройки режима оплаты """
+    await callback.answer()
+    await callback.message.edit_text('Выберите действие: 👇', reply_markup=payment_settings_kb())
+
+
+async def payment_manager(callback: types.CallbackQuery):
+    """ Выбор режима оплаты """
+    await callback.answer()
+    callback_data = callback.data.split('_')[-1]
+    user = base.get_user(chat_id=callback.from_user.id)
+    if user:
+        driver_id = user.get('driver_id')
+        limit = '0'
+        answer = 'наличные'
+        if callback_data == 'off':
+            limit = '150000'
+            answer = 'безналичные'
+        if data.set_payment(driver_id, limit):
+            await callback.message.edit_text(f'✅ Установлен режим оплаты - {answer}', reply_markup=cancel_kb())
+        else:
+            await callback.message.edit_text('❌ Ошибка при изменении режима оплаты', reply_markup=cancel_kb())
+    else:
+        await callback.message.edit_text('❌ Сначала зарегистрируйтесь /start', reply_markup=cancel_kb())
 
 
 async def delivery_settings(callback: types.CallbackQuery):
@@ -70,7 +96,7 @@ async def delivery_manager(callback: types.CallbackQuery):
         else:
             await callback.message.edit_text('❌ Ошибка получения данных', reply_markup=cancel_kb())
     else:
-        await callback.message.edit_text('❌ Ошибка получения пользователя', reply_markup=cancel_kb())
+        await callback.message.edit_text('❌ Сначала зарегистрируйтесь /start', reply_markup=cancel_kb())
 
 
 async def incity_settings(callback: types.CallbackQuery):
@@ -114,7 +140,7 @@ async def incity_manager(callback: types.CallbackQuery):
         else:
             await callback.message.edit_text('❌ Ошибка получения данных', reply_markup=cancel_kb())
     else:
-        await callback.message.edit_text('❌ Ошибка получения пользователя', reply_markup=cancel_kb())
+        await callback.message.edit_text('❌ Сначала зарегистрируйтесь /start', reply_markup=cancel_kb())
 
 
 def settings_handlers(dp: Dispatcher):
@@ -122,6 +148,8 @@ def settings_handlers(dp: Dispatcher):
     dp.callback_query.register(current_state, F.data == 'current_state')
     dp.callback_query.register(delivery_settings, F.data == 'delivery')
     dp.callback_query.register(delivery_manager, F.data.startswith('delivery_'))
+    dp.callback_query.register(payment_settings, F.data == 'payment')
+    dp.callback_query.register(payment_manager, F.data.startswith('cash_'))
     dp.callback_query.register(incity_settings, F.data == 'incity')
     dp.callback_query.register(incity_manager, F.data.startswith('incity_'))
 
