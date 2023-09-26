@@ -146,3 +146,10 @@ def get_seat_text(seats: list) -> str:
             text.append('От 7 до 12 лет')
     return f'👀 Добавлены кресла категории: {", ".join(text)}'
 
+
+def show_priority_drivers_text(data: tuple) -> str:
+    """ Текст для вывода приоритетных водителей """
+    text = '😎 Список приоритетных водителей: \n\n'
+    for i in data:
+        text += f'{i[0].full_name}: {i[0].phone}\n'
+    return text
