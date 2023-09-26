@@ -22,24 +22,38 @@ async def authorization_user(message: types.Message):
             '🔍 Проверяем номер телефона...',
             reply_markup=ReplyKeyboardRemove()
         )
-        driver = data.get_driver_id_and_car_id(phone=phone)
-        if driver:
-            base.register_user(chat_id=message.from_user.id, phone=phone, driver_id=driver[0], car_id=driver[1])
-            # возможна дополнительная логика с оповещение о регистрации
+        user = base.get_user(phone=phone)
+        if user:
             await bot.delete_message(message.from_user.id, check_message.message_id)
             await bot.send_message(
                 chat_id=message.from_user.id,
-                text='Главное меню',
+                text=main_menu,
                 reply_markup=main_kb()
             )
         else:
+            driver = data.get_driver_data(phone=phone)
+            if driver:
+                base.register_user(
+                    chat_id=message.from_user.id, phone=phone, driver_id=driver[0], car_id=driver[1],
+                    full_name=driver[2]
+                )
+                await bot.send_message(
+                    chat_id=message.from_user.id,
+                    text='✅ Регистрация выполнена'
+                )
+                await bot.send_message(
+                    chat_id=message.from_user.id,
+                    text=main_menu,
+                    reply_markup=main_kb()
+                )
+            else:
+                await bot.send_message(
+                    chat_id=message.from_user.id,
+                    text='❌ Номер в базе не найден\n\n'
+                         '⚡ Зарегистрироваться в парке можно на сайте волжский21.рф или напишите https://t.me/',
+                    reply_markup=register_kb
+                )
             await bot.delete_message(message.from_user.id, check_message.message_id)
-            await bot.send_message(
-                chat_id=message.from_user.id,
-                text='❌ Номер в базе не найден\n\n'
-                     '⚡ Зарегистрироваться в парке можно на сайте волжский21.рф или напишите https://t.me/',
-                reply_markup=register_kb
-            )
     else:
         await bot.send_message(message.from_user.id, 'Номер телефона не получен')
 
