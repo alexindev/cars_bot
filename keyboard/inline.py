@@ -5,12 +5,12 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 def main_kb() -> InlineKeyboardMarkup:
     """ Главное меню """
     keyboard = InlineKeyboardBuilder()
-    # keyboard.button(text='🧭 Текущий заказ', callback_data='current_order')
+    keyboard.button(text='🧭 Текущий заказ', callback_data='current_order')
     keyboard.button(text='📊 Статистика', callback_data='user_stat')
     keyboard.button(text='💯 Качество', callback_data='quality')
-    keyboard.button(text='🔝 Таблица лидеров', callback_data='leaderboard')
     keyboard.button(text='⚙ Настройки', callback_data='settings')
-    keyboard.adjust(2, 1, 1)
+    keyboard.button(text='🔝 Таблица лидеров', callback_data='leaderboard')
+    keyboard.adjust(2, 2, 1)
     return keyboard.as_markup()
 
 
@@ -100,5 +100,24 @@ def incity_settings_kb() -> InlineKeyboardMarkup:
     keyboard.button(text='👍 Включить', callback_data='incity_on')
     keyboard.button(text='👎 Выключить', callback_data='incity_off')
     keyboard.button(text='↩', callback_data='cancel')
+    keyboard.adjust(1)
+    return keyboard.as_markup()
+
+
+def admin_manager_kb() -> InlineKeyboardMarkup:
+    """ Клавиатура для управления меню админки """
+    keyboard = InlineKeyboardBuilder()
+    keyboard.button(text='Посмотреть', callback_data='show_staff')
+    keyboard.button(text='Добавить', callback_data='add__staff')
+    keyboard.button(text='Удалить', callback_data='del__staff')
+    keyboard.button(text='↩', callback_data='cancel')
+    keyboard.adjust(1)
+    return keyboard.as_markup()
+
+
+def admin_cancel_kb() -> InlineKeyboardMarkup:
+    """ Кнопка возврата в меню админки """
+    keyboard = InlineKeyboardBuilder()
+    keyboard.button(text='↩', callback_data='cancel_admin')
     keyboard.adjust(1)
     return keyboard.as_markup()
