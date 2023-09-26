@@ -50,12 +50,12 @@ class Data:
             logger.exception(e)
             return None
 
-    def get_driver_id_and_car_id(self, phone: str) -> tuple | None:
+    def get_driver_data(self, phone: str) -> tuple | None:
         """
-        Получить идентификатор водителя с помощью телефона
+        Получить driver_id, car_id, full_name
 
         :param phone:str:  Номер телефона
-        :return: Идентификатор водителя (str) или None, если не найден
+        :return: Идентификатор водителя, машины, полное имя
         """
         page = 1
         while True:
@@ -70,16 +70,18 @@ class Data:
                     }
 
                 ).json()
-
                 for i in response['driver_profiles']:
                     driver_id = i['driver_profile'].get('id')
                     car_id = i.get('car', {}).get('id')
                     driver_phone = i['driver_profile'].get('phones')[0]
+                    first_name = i['driver_profile'].get('first_name')
+                    last_name = i['driver_profile'].get('last_name')
                     if phone == driver_phone:
-                        return driver_id, car_id
+                        full_name = f'{first_name} {last_name}'
+                        return driver_id, car_id, full_name
 
                 if len(response['driver_profiles']) < 100:
-                    logger.exception('Нет совпадений по номеру телефона')
+                    logger.info('Нет совпадений по номеру телефона')
                     return None
                 page += 1
             except Exception as e:

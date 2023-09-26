@@ -10,11 +10,12 @@ class User(Base):
     __tablename__ = 'users'
     chat_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     phone: Mapped[str]
-    driver_id: Mapped[str | None]
-    car_id: Mapped[str | None]
+    driver_id: Mapped[str]
+    car_id: Mapped[str]
     is_staff: Mapped[bool]
+    full_name: Mapped[str]
 
     def __repr__(self):
-        return (f'chat_id: {self.chat_id}, phone: {self.phone}, driver_id: {self.driver_id}, car_id: {self.car_id}, '
-                f'is_staff: {self.is_staff}')
+        return (f'full_name: {self.full_name}, chat_id: {self.chat_id}, phone: {self.phone}, '
+                f'driver_id: {self.driver_id}, car_id: {self.car_id}, is_staff: {self.is_staff}')
 
