@@ -1,17 +1,22 @@
-from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session
-from db.models import Base, User
-
 import os
+
+from sqlalchemy import create_engine, select, update
+from sqlalchemy.orm import Session
+
+from db.models import Base, User
+from logs.config import logger
 
 
 class Database:
     """ Работа с базой данных """
+
     def __init__(self):
-        self.engine = create_engine(os.getenv('SQLALCHEMY_ENGINE'))
+        self.engine = create_engine(os.getenv('SQLALCHEMY_ENGINE'), echo=True)
         Base.metadata.create_all(bind=self.engine)
 
-    def register_user(self, chat_id: int, phone: str, driver_id: str, car_id: str, is_staff: bool = False) -> bool:
+    def register_user(
+            self, chat_id: int, phone: str, driver_id: str, car_id: str, full_name: str, is_staff: bool = False
+    ) -> bool:
         """
         Добавить пользователя
 
@@ -20,6 +25,7 @@ class Database:
         :param driver_id: Идентификатор водителя
         :param car_id: Идентификатор автомобиля
         :param is_staff: Доступ к админке
+        :param full_name: Полное имя водителя
         :return: True при успешном добавлении, False если пользователь не найден
         """
         user = self.get_user(phone=phone)
@@ -29,7 +35,10 @@ class Database:
             return False
         else:
             with Session(self.engine) as session:
-                session.add(User(chat_id=chat_id, phone=phone, driver_id=driver_id, car_id=car_id, is_staff=is_staff))
+                session.add(User(
+                    chat_id=chat_id, phone=phone, driver_id=driver_id, car_id=car_id, is_staff=is_staff,
+                    full_name=full_name
+                ))
                 session.commit()
                 return True
 
@@ -54,5 +63,26 @@ class Database:
                     'phone': user.phone,
                     'driver_id': user.driver_id,
                     'car_id': user.car_id,
-                    'is_staf': user.is_staff
+                    'is_staff': user.is_staff,
+                    'full_name': user.full_name
                 }
+
+    def get_staff_driver(self):
+        """ Получить всех водителей с приоритетом """
+        with Session(self.engine) as session:
+            stmt = select(User).where(User.is_staff)
+            result = session.execute(stmt).fetchall()
+            return result
+
+    def update_driver_status(self, phone: str, status: bool) -> bool:
+        """ Установить приоритет для водителя """
+        with Session(self.engine) as session:
+            try:
+                stmt = update(User).where(User.phone == phone).values(is_staff=status)
+                session.execute(stmt)
+                session.commit()
+                return True
+            except Exception as e:
+                session.rollback()
+                logger.exception(e)
+
