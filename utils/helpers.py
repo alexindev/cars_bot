@@ -153,3 +153,105 @@ def show_priority_drivers_text(data: tuple) -> str:
     for i in data:
         text += f'{i[0].full_name}: {i[0].phone}\n'
     return text
+
+
+def current_order_data(data: dict, status: bool) -> str:
+    """
+    Текст для текста текущего заказа
+    :param status: True если водитель имеет приоритет
+    :param data: Ответ на текущий запрос
+    :return: Строка с ответом для текущего заказа
+    """
+    categories = {
+        "business": "Business",
+        "cargo": "Грузовой",
+        "child_tariff": "Детский",
+        "comfort": "Комфорт",
+        "comfort_plus": "Комфорт+",
+        "courier": "Курьер",
+        "econom": "Эконом",
+        "express": "Доставка",
+        "intercity": "Межгород",
+        "maybach": "Élite",
+        "minivan": "Минивэн",
+        "none": "",
+        "personal_driver": "Водитель",
+        "pool": "Комбо",
+        "premium_suv": "Помощь взрослым",
+        "premium_van": "Минивэн Премиум",
+        "promo": "Промо тариф",
+        "start": "Старт",
+        "suv": "Помощь детям",
+        "ultimate": "Premier",
+        "vip": "VIP"
+    }
+
+    payments = {
+        "cash": "Наличные",
+        "cashless": "Безналичные",
+        "card": "Карта",
+        "internal": "Внутренний",
+        "other": "Другое",
+        "corp": "Корп. счёт",
+        "prepaid": "Предоплата"
+    }
+
+    statuses = {
+        "none": "Без статуса",
+        "driving": "Едем к клиенту",
+        "waiting": "Ждём клиента",
+        "transporting": "Везём клиента",
+        "complete": "Выполнен",
+        "failed": "Отказ",
+        "cancelled": "Отменён",
+        "expired": "Истёкший"
+    }
+
+    driver_status = data.get('driver', {}).get('status')
+
+    if driver_status == 'in_order':
+        order_status = data.get('order', {}).get('status')
+        payment_method = data.get('order', {}).get('payment_method')
+        category = data.get('order', {}).get('category')
+        price = data.get('order', {}).get('fixed_price')
+        trip_time = data.get('order', {}).get('actual_time')
+
+        points: list = data.get('order', {}).get('route')
+        point_c = []
+
+        if len(points) > 2:
+            for i in points[1:-1]:
+                point_c.append(i.get('address'))
+
+        point_a = points[0].get('address')
+        point_b = None
+
+        if order_status != 'driving':
+            point_b = points[-1].get('address')
+
+        if order_status == 'driving' and status:
+            point_b = points[-1].get('address')
+
+        minutes, seconds = divmod(trip_time, 60)
+        time_in_trip = f'{minutes:02}:{seconds:02}'
+
+        text = (f'♻ Текущий статус: {statuses.get(order_status)}\n\n'
+                f'📍 Точка А: {point_a}\n')
+
+        if point_c:
+            for i in point_c:
+                text += f'🚩 Промежуточная точка: {i}\n'
+
+        if point_b:
+            text += f'🏁 Точка Б: {point_b}\n'
+
+        text += f'💸 Тип оплаты: {payments.get(payment_method)}\n'
+
+        if price:
+            text += f'🧾 Сумма: {int(price[:-5])} руб.\n'
+
+        text += (f'🧮 Категория: {categories.get(category)}\n'
+                 f'⏱ Время в поездке (мин): {time_in_trip}\n')
+    else:
+        text = '🤷‍♀ На данный момент нет активных заказов'
+    return text
