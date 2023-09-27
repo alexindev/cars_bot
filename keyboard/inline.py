@@ -9,8 +9,9 @@ def main_kb() -> InlineKeyboardMarkup:
     keyboard.button(text='📊 Статистика', callback_data='user_stat')
     keyboard.button(text='💯 Качество', callback_data='quality')
     keyboard.button(text='⚙ Настройки', callback_data='settings')
+    keyboard.button(text='🐢 Неоплаченные заказы', callback_data='unpaid_orders')
     keyboard.button(text='🔝 Таблица лидеров', callback_data='leaderboard')
-    keyboard.adjust(2, 2, 1)
+    keyboard.adjust(2, 2, 1, 1)
     return keyboard.as_markup()
 
 
