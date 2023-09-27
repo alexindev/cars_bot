@@ -1,7 +1,7 @@
 import os
 
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from utils.config import headers, cookies
 from logs.config import logger
 from utils.helpers import get_last_monday_sunday
@@ -344,7 +344,7 @@ class Data:
 
     def get_current_order_status(self, driver_id: str) -> dict:
         """
-        Получить текщее состояние заказа
+        Получить текущее состояние заказа
 
         :param driver_id: Идентификатор водителя
         :return: Словарь с текущим состоянием заказа
@@ -360,3 +360,67 @@ class Data:
         except Exception as e:
             logger.exception(e)
 
+    def get_unpaid_orders(self, driver_id: str) -> list | None:
+        """
+        Получить неоплаченые заказы
+
+        :param driver_id: Идентификатор водителя
+        :return:
+        """
+        today = datetime.today()
+        date_from = today - timedelta(weeks=1)
+
+        data = {
+            "date_type": "booked_at",
+            "order_statuses": ["complete"],
+            "order_payments": ["cashless"],
+            "driver_id": driver_id,
+            "date_from": f"{date_from}T00:00:00.000+03:00",
+            "date_to": f"{datetime.today().strftime('%Y-%m-%d')}T23:59:00.000+03:00"
+        }
+
+        result = []
+        while True:
+            try:
+                response = requests.post(
+                    url='https://fleet.yandex.ru/api/reports-api/v1/orders/list',
+                    headers=self.headers,
+                    cookies=self.cookies,
+                    json=data
+                ).json()
+
+                if not response.get('orders'):
+                    return []
+
+                data['cursor'] = response.get('cursor')
+
+                for i in response['orders']:
+                    price = int(i.get('price'))
+                    price_card = int(i.get('price_card'))
+                    price_corporate = int(i.get('price_corporate'))
+                    price_promotion = int(i.get('price_promotion'))
+
+                    full_price = price_card + price_corporate + price_promotion
+
+                    if full_price != price:
+                        date = i.get('ended_at').split('.')[0].replace('T', ' ')
+                        order_id = i.get('short_id')
+                        address_from = i.get('address_from')
+                        address_to = i.get('address_to')
+                        category = i.get('category')
+
+                        result.append(
+                            {
+                                'order_id': order_id,
+                                'price': price,
+                                'date': date,
+                                'address_from': address_from,
+                                'address_to': address_to,
+                                'category': category
+                            }
+                        )
+                if len(response.get('orders')) < 40:
+                    return result
+            except Exception as e:
+                logger.exception(e)
+                return
