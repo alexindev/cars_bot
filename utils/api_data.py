@@ -342,3 +342,21 @@ class Data:
         except Exception as e:
             logger.exception(e)
 
+    def get_current_order_status(self, driver_id: str) -> dict:
+        """
+        Получить текщее состояние заказа
+
+        :param driver_id: Идентификатор водителя
+        :return: Словарь с текущим состоянием заказа
+        """
+        try:
+            response = requests.get(
+                url='https://fleet.yandex.ru/api/fleet/map/v1/drivers/item',
+                headers=self.headers,
+                cookies=self.cookies,
+                params={'driver_id': driver_id}
+            ).json()
+            return response
+        except Exception as e:
+            logger.exception(e)
+
