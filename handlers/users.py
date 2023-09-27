@@ -4,7 +4,7 @@ from aiogram.types import ReplyKeyboardRemove
 from keyboard.inline import main_kb, cancel_kb
 from keyboard.standart import register_kb
 from loader import bot, data, base
-from utils.helpers import get_leaderboard_text, get_quality_text
+from utils.helpers import get_leaderboard_text, get_quality_text, current_order_data
 from utils.text_answer import main_menu
 
 
@@ -58,12 +58,6 @@ async def authorization_user(message: types.Message):
         await bot.send_message(message.from_user.id, 'Номер телефона не получен')
 
 
-async def current_order(callback: types.CallbackQuery):
-    """ Текущий заказ """
-    await callback.message.edit_text('🤷‍♀ На данный момент нет активных заказов', reply_markup=cancel_kb())
-    await callback.answer()
-
-
 async def liderboard(callback: types.CallbackQuery):
     """ Таблица лидеров """
     liders: list = data.get_leaders()
@@ -94,16 +88,29 @@ async def quality(callback: types.CallbackQuery):
         await callback.message.edit_text('❌ Сначала зарегистрируйтесь /start', reply_markup=cancel_kb())
 
 
+async def current_order(callback: types.CallbackQuery):
+    """ Текущий заказ """
+    await callback.answer()
+    user = base.get_user(chat_id=callback.from_user.id)
+    if user:
+        driver_id = user.get('driver_id')
+        order = data.get_current_order_status(driver_id=driver_id)
+        text = current_order_data(data=order, status=user.get('is_staff'))
+        await callback.message.edit_text(text=text, reply_markup=cancel_kb())
+    else:
+        await callback.message.edit_text('❌ Сначала зарегистрируйтесь /start', reply_markup=cancel_kb())
+
+
 async def cancel_menu(callback: types.CallbackQuery):
     """ Возврат в главное меню """
     await callback.message.edit_text(main_menu, reply_markup=main_kb())
     await callback.answer()
 
 
-def user_hanlers(dp: Dispatcher):
+def user_handlers(dp: Dispatcher):
     """ Регистрация обработчиков """
     dp.message.register(authorization_user, F.contact)
-    dp.callback_query.register(current_order, F.data == 'current_order')
     dp.callback_query.register(liderboard, F.data == 'leaderboard')
     dp.callback_query.register(quality, F.data == 'quality')
+    dp.callback_query.register(current_order, F.data == 'current_order')
     dp.callback_query.register(cancel_menu, F.data == 'cancel')
