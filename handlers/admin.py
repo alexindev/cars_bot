@@ -92,6 +92,13 @@ async def new_staff(message: types.Message, state: FSMContext):
     await state.clear()
 
 
+async def admin_stat(callback: types.CallbackQuery):
+    """ Статистика по водителям """
+    await callback.answer()
+    driver_count = base.get_drivers_count()
+    await callback.message.edit_text(f'В боте зарегистрировано: {driver_count}', reply_markup=admin_cancel_kb())
+
+
 async def admin_cancel(callback: types.CallbackQuery, state: FSMContext):
     """ Вернуться в главое меню админки """
     await callback.answer()
@@ -103,5 +110,6 @@ def admin_handlers(dp: Dispatcher):
     dp.message.register(admin_manager, F.text == '/admin')
     dp.callback_query.register(show_staff, F.data == 'show_staff')
     dp.callback_query.register(get_phone_staff, F.data.endswith('__staff'))
+    dp.callback_query.register(admin_stat, F.data == 'admin_stat')
     dp.callback_query.register(admin_cancel, F.data == 'cancel_admin')
     dp.message.register(new_staff, AdminComands.get_phone)
