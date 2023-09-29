@@ -6,12 +6,14 @@ from sqlalchemy.orm import Session
 from db.models import Base, User
 from logs.config import logger
 
+from sqlalchemy import func
+
 
 class Database:
     """ Работа с базой данных """
 
     def __init__(self):
-        self.engine = create_engine(os.getenv('SQLALCHEMY_ENGINE'), echo=True)
+        self.engine = create_engine(os.getenv('SQLALCHEMY_ENGINE'))
         Base.metadata.create_all(bind=self.engine)
 
     def register_user(
@@ -86,3 +88,11 @@ class Database:
                 session.rollback()
                 logger.exception(e)
 
+    def get_drivers_count(self):
+        """ Получить количество зарегистрированных водителей в боте """
+        with Session(self.engine) as session:
+            try:
+                result = session.query(func.count(User.driver_id)).scalar()
+                return result
+            except Exception as e:
+                logger.exception(e)
