@@ -395,10 +395,10 @@ class Data:
                 data['cursor'] = response.get('cursor')
 
                 for i in response['orders']:
-                    price = int(i.get('price'))
-                    price_card = int(i.get('price_card'))
-                    price_corporate = int(i.get('price_corporate'))
-                    price_promotion = int(i.get('price_promotion'))
+                    price = int(i.get('price', 0))
+                    price_card = int(i.get('price_card', 0))
+                    price_corporate = int(i.get('price_corporate', 0))
+                    price_promotion = int(i.get('price_promotion', 0))
 
                     full_price = price_card + price_corporate + price_promotion
 
