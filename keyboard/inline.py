@@ -111,6 +111,7 @@ def admin_manager_kb() -> InlineKeyboardMarkup:
     keyboard.button(text='Посмотреть', callback_data='show_staff')
     keyboard.button(text='Добавить', callback_data='add__staff')
     keyboard.button(text='Удалить', callback_data='del__staff')
+    keyboard.button(text='Статистика', callback_data='admin_stat')
     keyboard.button(text='↩', callback_data='cancel')
     keyboard.adjust(1)
     return keyboard.as_markup()
