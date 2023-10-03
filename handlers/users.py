@@ -31,29 +31,33 @@ async def authorization_user(message: types.Message):
                 reply_markup=main_kb()
             )
         else:
-            driver = data.get_driver_data(phone=phone)
-            if driver:
-                base.register_user(
-                    chat_id=message.from_user.id, phone=phone, driver_id=driver[0], car_id=driver[1],
-                    full_name=driver[2]
-                )
-                await bot.send_message(
-                    chat_id=message.from_user.id,
-                    text='✅ Регистрация выполнена'
-                )
-                await bot.send_message(
-                    chat_id=message.from_user.id,
-                    text=main_menu,
-                    reply_markup=main_kb()
-                )
+            park_data = base.get_parks()
+            for park in park_data:
+                session_id = park.get('session_id')
+                park_id = park.get('park_id')
+                driver = data.get_driver_data(phone=phone, session_id=session_id, park_id=park_id)
+
+                if driver:
+                    base.register_user(chat_id=message.from_user.id, phone=phone, driver_id=driver[0], car_id=driver[1],
+                                       park_id=park.get('id'), full_name=driver[2])
+                    await bot.delete_message(message.from_user.id, check_message.message_id)
+                    await bot.send_message(
+                        chat_id=message.from_user.id,
+                        text='✅ Регистрация выполнена'
+                    )
+                    await bot.send_message(
+                        chat_id=message.from_user.id,
+                        text=main_menu,
+                        reply_markup=main_kb()
+                    )
+                    break
             else:
                 await bot.send_message(
                     chat_id=message.from_user.id,
                     text='❌ Номер в базе не найден\n\n'
-                         '⚡ Зарегистрироваться в парке можно на сайте волжский21.рф или напишите https://t.me/',
+                         '⚡ Зарегистрироваться в парке можно на сайте www или напишите https://t.me/',
                     reply_markup=register_kb
                 )
-            await bot.delete_message(message.from_user.id, check_message.message_id)
     else:
         await bot.send_message(message.from_user.id, 'Номер телефона не получен')
 
@@ -61,13 +65,18 @@ async def authorization_user(message: types.Message):
 async def liderboard(callback: types.CallbackQuery):
     """ Таблица лидеров """
     await callback.answer()
-    liders: list = data.get_leaders()
-    if liders:
-        text = get_leaderboard_text(liders)
-        await callback.message.edit_text(text, reply_markup=cancel_kb())
+
+    user = base.get_user(chat_id=callback.from_user.id)
+    if user:
+        liders = data.get_leaders(park_id=user.get('park_id'), session_id=user.get('session_id'))
+        if liders:
+            text = get_leaderboard_text(liders)
+            await callback.message.edit_text(text, reply_markup=cancel_kb())
+        else:
+            await callback.message.edit_text('Таблица лидеров на данный момент не сформирована',
+                                             reply_markup=cancel_kb())
     else:
-        await callback.message.edit_text('Таблица лидеров на данный момент не сформирована',
-                                         reply_markup=cancel_kb())
+        await callback.message.edit_text('❌ Сначала зарегистрируйтесь /start', reply_markup=cancel_kb())
 
 
 async def quality(callback: types.CallbackQuery):
@@ -75,7 +84,8 @@ async def quality(callback: types.CallbackQuery):
     await callback.answer()
     user = base.get_user(chat_id=callback.from_user.id)
     if user:
-        quality_data = data.get_quality(driver_id=user.get('driver_id'))
+        quality_data = data.get_quality(driver_id=user.get('driver_id'), park_id=user.get('park_id'),
+                                        session_id=user.get('session_id'))
         if quality_data:
             text = get_quality_text(quality_data)
             await callback.message.edit_text(text=text, reply_markup=cancel_kb())
@@ -91,10 +101,12 @@ async def quality(callback: types.CallbackQuery):
 async def current_order(callback: types.CallbackQuery):
     """ Текущий заказ """
     await callback.answer()
+
     user = base.get_user(chat_id=callback.from_user.id)
     if user:
         driver_id = user.get('driver_id')
-        order = data.get_current_order_status(driver_id=driver_id)
+        order = data.get_current_order_status(driver_id=driver_id, park_id=user.get('park_id'),
+                                              session_id=user.get('session_id'))
         text = current_order_data(data=order, status=user.get('is_staff'))
         await callback.message.edit_text(text=text, reply_markup=cancel_kb())
     else:
@@ -107,7 +119,8 @@ async def unpaid_orders(callback: types.CallbackQuery):
     user = base.get_user(chat_id=callback.from_user.id)
     if user:
         await callback.message.edit_text('🔎 Собираем информацию...')
-        result = data.get_unpaid_orders(driver_id=user.get('driver_id'))
+        result = data.get_unpaid_orders(driver_id=user.get('driver_id'), park_id=user.get('park_id'),
+                                        session_id=user.get('session_id'))
         text = unpaid_orders_text(data=result)
         await callback.message.edit_text(text=text, reply_markup=cancel_kb())
     else:

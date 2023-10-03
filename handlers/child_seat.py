@@ -18,7 +18,8 @@ async def seat_info(callback: types.CallbackQuery):
     user = base.get_user(chat_id=callback.from_user.id)
     if user:
         car_id = user.get('car_id')
-        state: dict = data.get_current_state(car_id=car_id)
+        state: dict = data.get_current_state(car_id=car_id, park_id=user.get('park_id'),
+                                             session_id=user.get('session_id'))
         if state:
             if 'chairs' in state:
                 seats = []

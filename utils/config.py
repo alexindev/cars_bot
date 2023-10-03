@@ -1,15 +1,12 @@
-from dotenv import load_dotenv
 
-import os
+def cookies(session_id: str):
+    return {
+        'Session_id': session_id,
+    }
 
 
-load_dotenv()
-
-cookies = {
-    'Session_id': os.getenv('SESSION_ID'),
-}
-
-headers = {
-    'Accept-Language': 'ru,en-US;q=0.9,en;q=0.8,ru-RU;q=0.7',
-    'X-Park-Id': os.getenv('PARK_ID'),
-}
+def headers(park_id: str):
+    return {
+        'Accept-Language': 'ru,en-US;q=0.9,en;q=0.8,ru-RU;q=0.7',
+        'X-Park-Id': park_id,
+    }

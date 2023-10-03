@@ -1,5 +1,3 @@
-import os
-
 import requests
 from datetime import datetime, timedelta
 from utils.config import headers, cookies
@@ -8,14 +6,13 @@ from utils.helpers import get_last_monday_sunday
 
 
 class Data:
-    def __init__(self):
-        self.headers = headers
-        self.cookies = cookies
-
-    def get_leaders(self) -> list | None:
+    @staticmethod
+    def get_leaders(park_id: str, session_id: str) -> list | None:
         """
         Таблица лидеров
 
+        :param session_id: Сессия парка
+        :param park_id: идентификатор парка
         :return: Список лидеров list или None если ошибка
         """
         today = datetime.today()
@@ -32,8 +29,8 @@ class Data:
         try:
             response = requests.post(
                 url='https://fleet.yandex.ru/api/reports-api/v2/summary/drivers/list',
-                headers=self.headers,
-                cookies=self.cookies,
+                headers=headers(park_id=park_id),
+                cookies=cookies(session_id=session_id),
                 json=data
             ).json()
 
@@ -50,10 +47,13 @@ class Data:
             logger.exception(e)
             return None
 
-    def get_driver_data(self, phone: str) -> tuple | None:
+    @staticmethod
+    def get_driver_data(phone: str, session_id: str, park_id: str) -> tuple | None:
         """
         Получить driver_id, car_id, full_name
 
+        :param session_id: Сессия парка
+        :param park_id: идентификатор парка
         :param phone:str:  Номер телефона
         :return: Идентификатор водителя, машины, полное имя
         """
@@ -62,8 +62,8 @@ class Data:
             try:
                 response = requests.post(
                     url='https://fleet.yandex.ru/api/v1/drivers/list',
-                    headers=self.headers,
-                    cookies=self.cookies,
+                    headers=headers(park_id=park_id),
+                    cookies=cookies(session_id=session_id),
                     json={
                         "page": page,
                         "limit": 100
@@ -88,10 +88,13 @@ class Data:
                 logger.exception(e)
                 return None
 
-    def get_status(self, driver_id: str, interval: str) -> dict | None:
+    @staticmethod
+    def get_status(driver_id: str, interval: str, park_id: str, session_id: str) -> dict | None:
         """
         Статистика заказов для водителя
 
+        :param session_id: Сессия парка
+        :param park_id: идентификатор парка
         :param driver_id: Идентификатор водителя
         :param interval: Интервал
         :return: Словарь со статистикой водителя
@@ -102,24 +105,24 @@ class Data:
             "date_from": datetime.now().strftime(f'%Y-%m-{interval}T00:00:00.000+03:00'),
             "date_to": datetime.now().strftime('%Y-%m-%dT23:59:59.000+03:00')
         }
-
         try:
             response = requests.post(
                 url='https://fleet.yandex.ru/api/v1/cards/driver/income',
-                headers=self.headers,
-                cookies=self.cookies,
+                headers=headers(park_id=park_id),
+                cookies=cookies(session_id=session_id),
                 json=data
-
             ).json()
             return response
-
         except Exception as e:
             logger.exception(e)
 
-    def get_canceled_trip(self, driver_id: str, date_from: str, date_to: str) -> list:
+    @staticmethod
+    def get_canceled_trip(driver_id: str, date_from: str, date_to: str, park_id: str, session_id: str) -> list:
         """
         Получить статистику по самолетам и отмены
 
+        :param session_id: Сессия парка
+        :param park_id: идентификатор парка
         :param date_from: Начало периода
         :param date_to: Конец периода
         :param driver_id: Идентификатор водителя
@@ -136,11 +139,10 @@ class Data:
             while True:
                 response = requests.post(
                     url='https://fleet.yandex.ru/api/reports-api/v1/orders/list',
-                    headers=self.headers,
-                    cookies=self.cookies,
+                    headers=headers(park_id=park_id),
+                    cookies=cookies(session_id=session_id),
                     json=data
                 ).json()
-
                 if not response.get('orders'):
                     return []
 
@@ -155,10 +157,12 @@ class Data:
         except Exception as e:
             logger.exception(e)
 
-    def get_quality(self, driver_id: str) -> dict | None:
+    def get_quality(self, driver_id: str, park_id: str, session_id: str) -> dict | None:
         """
         Получить информацию по качеству
 
+        :param session_id: Сессия парка
+        :param park_id: Идентификатор парка
         :param driver_id: Идентификатор водителя
         :return: Словарь с показателями качества водителя
         """
@@ -178,8 +182,8 @@ class Data:
 
                 response = requests.post(
                     url='https://fleet.yandex.ru/api/reports-api/v1/quality/list',
-                    headers=self.headers,
-                    cookies=self.cookies,
+                    headers=headers(park_id=park_id),
+                    cookies=cookies(session_id=session_id),
                     json=data
                 ).json()
                 if not response.get('report'):
@@ -188,7 +192,6 @@ class Data:
                     page = 1
                     lap += 1
                     last = False
-                    logger.info('Данные для отчета за прошлую неделю еще не сформированы')
                     continue
 
                 report_data = {}
@@ -228,10 +231,13 @@ class Data:
         }
         return data
 
-    def get_current_state(self, car_id: str) -> dict | None:
+    @staticmethod
+    def get_current_state(car_id: str, park_id: str, session_id: str) -> dict | None:
         """
         Получить текущее состояние водителя
 
+        :param session_id: Сессия парка
+        :param park_id: Идентификатор парка
         :param car_id: Идентификатор автомобиля
         :return: Словарь с информацией о тарифах и услугах
         """
@@ -239,8 +245,8 @@ class Data:
         try:
             response = requests.post(
                 url='https://fleet.yandex.ru/api/v1/cards/car/details',
-                headers=self.headers,
-                cookies=self.cookies,
+                headers=headers(park_id=park_id),
+                cookies=cookies(session_id=session_id),
                 json={"car_id": f"{car_id}"}
             ).json()
             state_data['brand'] = response['car'].get('brand')
@@ -265,10 +271,13 @@ class Data:
         except Exception as e:
             logger.exception(e)
 
-    def update_category(self, car_id: str, state: dict) -> bool:
+    @staticmethod
+    def update_category(car_id: str, state: dict, park_id: str, session_id: str) -> bool:
         """
         Менеджер услуг
 
+        :param session_id: Сессия парка
+        :param park_id: Идентификатор парка
         :param car_id: Идентификатор автомобиля
         :param state: Актуальное состояние
         :return: True в случае успешной операции
@@ -277,8 +286,8 @@ class Data:
             response = requests.post(
                 url='https://fleet.yandex.ru/api/v1/cars/update',
                 params={'carId': car_id},
-                headers=self.headers,
-                cookies=self.cookies,
+                headers=headers(park_id=park_id),
+                cookies=cookies(session_id=session_id),
                 json=state
             )
             if response.status_code == 200:
@@ -287,15 +296,18 @@ class Data:
         except Exception as e:
             logger.exception(e)
 
-    def set_payment(self, driver_id: str, limit: str) -> bool:
+    def set_payment(self, driver_id: str, limit: str, park_id: str, client: str, api_key: str) -> bool:
         """
         Установить лимит водителя
 
-        :param limit: '0' - наличный расчет, '150000' - безналичный расчет
+        :param api_key: API Key
+        :param client: Clien Key
+        :param park_id: Идентификатор парка
+        :param limit: '300' - наличный расчет, '150000' - безналичный расчет
         :param driver_id: Идентификатор водителя
         :return:
         """
-        data = self.get_driver_profile_data(driver_id)
+        data = self.get_driver_profile_data(driver_id,  park_id, client, api_key)
         if not data:
             return False
 
@@ -304,9 +316,9 @@ class Data:
             response = requests.put(
                 url='https://fleet-api.taxi.yandex.net/v2/parks/contractors/driver-profile',
                 headers={
-                    'X-Client-ID': os.getenv('X_CLIENT_ID'),
-                    'X-Api-Key': os.getenv('X_API_KEY'),
-                    'X-Park-ID': os.getenv('PARK_ID')
+                    'X-Client-ID': client,
+                    'X-Api-Key': api_key,
+                    'X-Park-ID': park_id
                 },
                 json=data,
                 params={
@@ -319,10 +331,13 @@ class Data:
             logger.exception(e)
 
     @staticmethod
-    def get_driver_profile_data(driver_id: str) -> dict:
+    def get_driver_profile_data(driver_id: str,  park_id: str, client: str, api_key: str) -> dict:
         """
         Получить информацию о водителе
 
+        :param api_key: API Key
+        :param client: Clien Key
+        :param park_id: Идентификатор парка
         :param driver_id: Идентификатор водителя
         :return: Словарь с параметрами для обновления данных
         """
@@ -330,9 +345,9 @@ class Data:
             response = requests.get(
                 url=f'https://fleet-api.taxi.yandex.net/v2/parks/contractors/driver-profile',
                 headers={
-                    'X-Client-ID': os.getenv('X_CLIENT_ID'),
-                    'X-Api-Key': os.getenv('X_API_KEY'),
-                    'X-Park-ID': os.getenv('PARK_ID')
+                    'X-Client-ID': client,
+                    'X-Api-Key': api_key,
+                    'X-Park-ID': park_id
                 },
                 params={
                     'contractor_profile_id': driver_id
@@ -342,28 +357,34 @@ class Data:
         except Exception as e:
             logger.exception(e)
 
-    def get_current_order_status(self, driver_id: str) -> dict:
+    @staticmethod
+    def get_current_order_status(driver_id: str, park_id: str, session_id: str) -> dict:
         """
         Получить текущее состояние заказа
 
+        :param session_id: Сессия парка
+        :param park_id: Идентификатор парка
         :param driver_id: Идентификатор водителя
         :return: Словарь с текущим состоянием заказа
         """
         try:
             response = requests.get(
                 url='https://fleet.yandex.ru/api/fleet/map/v1/drivers/item',
-                headers=self.headers,
-                cookies=self.cookies,
+                headers=headers(park_id=park_id),
+                cookies=cookies(session_id=session_id),
                 params={'driver_id': driver_id}
             ).json()
             return response
         except Exception as e:
             logger.exception(e)
 
-    def get_unpaid_orders(self, driver_id: str) -> list | None:
+    @staticmethod
+    def get_unpaid_orders(driver_id: str, park_id: str, session_id: str) -> list | None:
         """
         Получить неоплаченые заказы
 
+        :param session_id: Сессия парка
+        :param park_id: Идентификатор парка
         :param driver_id: Идентификатор водителя
         :return:
         """
@@ -384,12 +405,15 @@ class Data:
             try:
                 response = requests.post(
                     url='https://fleet.yandex.ru/api/reports-api/v1/orders/list',
-                    headers=self.headers,
-                    cookies=self.cookies,
+                    headers=headers(park_id=park_id),
+                    cookies=cookies(session_id=session_id),
                     json=data
                 ).json()
 
-                if not response.get('orders'):
+                try:
+                    response['orders']
+                except Exception as e:
+                    logger.exception(e)
                     return []
 
                 data['cursor'] = response.get('cursor')
@@ -401,7 +425,6 @@ class Data:
                     price_promotion = int(i.get('price_promotion', 0))
 
                     full_price = price_card + price_corporate + price_promotion
-
                     if full_price != price:
                         date = i.get('ended_at').split('.')[0].replace('T', ' ')
                         order_id = i.get('short_id')
@@ -424,3 +447,15 @@ class Data:
             except Exception as e:
                 logger.exception(e)
                 return
+
+    # def smz(self):
+    #     response = requests.get(
+    #         url='https://fleet-api.taxi.yandex.net/v1/parks/driver-work-rules?park_id=21d56564727d43a986318d1df5188df1',
+    #         headers={
+    #             'X-Client-ID': os.getenv('X_CLIENT_ID'),
+    #             'X-Api-Key': os.getenv('X_API_KEY'),
+    #             'X-Park-ID': os.getenv('PARK_ID')
+    #         },
+    #         # cookies=self.cookies
+    #     ).json()
+    #     print(response)
