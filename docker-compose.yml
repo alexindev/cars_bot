@@ -1,0 +1,9 @@
+version: "3.8"
+services:
+  taxi:
+    build:
+      context: .
+    restart: always
+    volumes:
+      - ./logs:/app/logs
+      - ./db:/app/db
