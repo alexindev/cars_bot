@@ -29,10 +29,10 @@ async def detail_statistic(callback: types.CallbackQuery):
             date_from = datetime.today().strftime('%Y-%m-%d')
 
         driver_id = user.get('driver_id')
-        cancelled = data.get_canceled_trip(driver_id=driver_id, date_from=date_from, date_to=date_to,
-                                           park_id=user.get('park_id'), session_id=user.get('session_id'))
-        stat = data.get_status(driver_id=driver_id, interval=interval, park_id=user.get('park_id'),
-                               session_id=user.get('session_id'))
+        cancelled = await data.get_canceled_trip(driver_id=driver_id, date_from=date_from, date_to=date_to,
+                                                 park_id=user.get('park_id'), session_id=user.get('session_id'))
+        stat = await data.get_status(driver_id=driver_id, interval=interval, park_id=user.get('park_id'),
+                                     session_id=user.get('session_id'))
 
         if stat:
             text = get_statistic_text(stat, cancelled)
@@ -45,4 +45,4 @@ async def detail_statistic(callback: types.CallbackQuery):
 
 def statistics_handlers(dp: Dispatcher):
     dp.callback_query.register(driver_statistic, F.data == 'user_stat')
-    dp.callback_query.register(detail_statistic,  F.data.startswith('stat_'))
+    dp.callback_query.register(detail_statistic, F.data.startswith('stat_'))

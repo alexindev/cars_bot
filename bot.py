@@ -4,11 +4,13 @@ from handlers.commands import commands_handlers
 from handlers.users import user_handlers
 from handlers.settings import settings_handlers
 from handlers.statistics import statistics_handlers
+from handlers.register import regisres_handlers
 from logs.config import logger
 
 
 async def start_bot():
     """Запуск бота"""
+    regisres_handlers(dp)
     user_handlers(dp)
     commands_handlers(dp)
     settings_handlers(dp)

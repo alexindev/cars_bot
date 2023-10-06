@@ -1,18 +1,15 @@
 from loader import bot
 from aiogram import types, Dispatcher, F
+from aiogram.fsm.context import FSMContext
 
 from keyboard.standart import register_kb, send_phone_kb
-from utils.text_answer import start_command_text, register_user_text, auth_user_text, park_info_text
+from utils.text_answer import start_command_text, auth_user_text, park_info_text
 
 
-async def start_command(message: types.Message):
+async def start_command(message: types.Message, state: FSMContext):
     """ Стартовое сообщение """
+    await state.clear()
     await bot.send_message(message.from_user.id, text=start_command_text, reply_markup=register_kb)
-
-
-async def register_user(message: types.Message):
-    """ Регистрация пользователей """
-    await bot.send_message(message.from_user.id, text=register_user_text)
 
 
 async def auth_user(message: types.Message):
@@ -27,7 +24,6 @@ async def park_info(message: types.Message):
 
 def commands_handlers(dp: Dispatcher):
     """ Регистрация обработчиков """
-    dp.message.register(start_command, (F.text == '↩ Отмена') | (F.text == '/start'))
-    dp.message.register(register_user, F.text == '🚖 Стать водитилем | курьером')
+    dp.message.register(start_command, (F.text == '↩') | (F.text == '/start'))
     dp.message.register(auth_user, F.text == '🔑 Авторизация')
     dp.message.register(park_info, F.text == 'ℹ Информация о парке')

@@ -18,8 +18,8 @@ async def seat_info(callback: types.CallbackQuery):
     user = base.get_user(chat_id=callback.from_user.id)
     if user:
         car_id = user.get('car_id')
-        state: dict = data.get_current_state(car_id=car_id, park_id=user.get('park_id'),
-                                             session_id=user.get('session_id'))
+        state: dict = await data.get_current_state(car_id=car_id, park_id=user.get('park_id'),
+                                                   session_id=user.get('session_id'))
         if state:
             if 'chairs' in state:
                 seats = []
@@ -67,4 +67,3 @@ async def seat_update(callback: types.CallbackQuery):
             await callback.message.edit_text('❌ Ошибка при выполнении операции', reply_markup=cancel_kb())
     else:
         await callback.message.edit_text('❌ Сначала зарегистрируйтесь /start', reply_markup=cancel_kb())
-
