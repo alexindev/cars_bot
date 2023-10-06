@@ -15,7 +15,7 @@ class Database:
         Base.metadata.create_all(bind=self.engine)
 
     def register_user(self, chat_id: int, phone: str, driver_id: str, car_id: str, full_name: str, park_id: int,
-                      is_staff: bool = False) -> bool:
+                      is_staff: bool = False, is_banned: bool = False) -> bool:
         """
         Добавить пользователя
 
@@ -27,6 +27,7 @@ class Database:
         :param full_name: Полное имя водителя
         :return: True при успешном добавлении, False если пользователь не найден
         :param park_id: Идентификатор парка в таблице
+        :param is_banned: Проверка бана
         """
         user = self.get_user(phone=phone)
 
@@ -35,12 +36,16 @@ class Database:
             return False
         else:
             with Session(self.engine) as session:
-                session.add(User(
-                    chat_id=chat_id, phone=phone, driver_id=driver_id, car_id=car_id, is_staff=is_staff,
-                    full_name=full_name, park_id=park_id
-                ))
-                session.commit()
-                return True
+                try:
+                    session.add(User(
+                        chat_id=chat_id, phone=phone, driver_id=driver_id, car_id=car_id, is_staff=is_staff,
+                        full_name=full_name, park_id=park_id, is_banned=is_banned
+                    ))
+                    session.commit()
+                    return True
+                except Exception as e:
+                    logger.exception(e)
+                    session.rollback()
 
     def get_user(self, chat_id: int = None, phone: str = None) -> dict | None:
         """
@@ -51,33 +56,42 @@ class Database:
         :return: Словарь с данными пользователя
         """
         with Session(self.engine) as session:
-            if chat_id:
-                stmt = select(User).where(User.chat_id == chat_id)
-            else:
-                stmt = select(User).where(User.phone == phone)
-            result = session.execute(stmt).fetchone()
-            if result:
-                user = result[0]
-                return {
-                    'chat_id': user.chat_id,
-                    'phone': user.phone,
-                    'driver_id': user.driver_id,
-                    'car_id': user.car_id,
-                    'is_staff': user.is_staff,
-                    'full_name': user.full_name,
-                    'park_id': user.park.park_id,
-                    'session_id': user.park.session_id,
-                    'api_key': user.park.api_key,
-                    'client': user.park.client,
-                    'name': user.park.name
-                }
+            try:
+                if chat_id:
+                    stmt = select(User).where(User.chat_id == chat_id)
+                else:
+                    stmt = select(User).where(User.phone == phone)
+                result = session.execute(stmt).fetchone()
+                if result:
+                    user = result[0]
+                    return {
+                        'chat_id': user.chat_id,
+                        'phone': user.phone,
+                        'driver_id': user.driver_id,
+                        'car_id': user.car_id,
+                        'is_staff': user.is_staff,
+                        'full_name': user.full_name,
+                        'park_id': user.park.park_id,
+                        'session_id': user.park.session_id,
+                        'api_key': user.park.api_key,
+                        'client': user.park.client,
+                        'name': user.park.name,
+                        'is_banned': user.is_banned
+                    }
+            except Exception as e:
+                logger.exception(e)
+                session.rollback()
 
     def get_staff_driver(self):
         """ Получить всех водителей с приоритетом """
         with Session(self.engine) as session:
-            stmt = select(User).where(User.is_staff)
-            result = session.execute(stmt).fetchall()
-            return result
+            try:
+                stmt = select(User).where(User.is_staff)
+                result = session.execute(stmt).fetchall()
+                return result
+            except Exception as e:
+                logger.exception(e)
+                session.rollback()
 
     def update_driver_status(self, phone: str, status: bool) -> bool:
         """ Установить приоритет для водителя """
@@ -99,6 +113,7 @@ class Database:
                 return result
             except Exception as e:
                 logger.exception(e)
+                session.rollback()
 
     def new_park(self, api_key: str, client: str, park_id: str, session_id: str, name: str):
         """
@@ -125,17 +140,35 @@ class Database:
     def get_parks(self) -> list:
         """ Получить все парки """
         with Session(self.engine) as session:
-            result = session.execute(select(Park)).fetchall()
-            data = []
-            for park in result:
-                park_data = {
-                    'id': park[0].id,
-                    'park_id': park[0].park_id,
-                    'api_key': park[0].api_key,
-                    'client': park[0].client,
-                    'session_id': park[0].session_id,
-                    'name': park[0].name
-                }
-                data.append(park_data)
-            return data
+            try:
+                result = session.execute(select(Park)).fetchall()
+                data = []
+                for park in result:
+                    park_data = {
+                        'id': park[0].id,
+                        'park_id': park[0].park_id,
+                        'api_key': park[0].api_key,
+                        'client': park[0].client,
+                        'session_id': park[0].session_id,
+                        'name': park[0].name
+                    }
+                    data.append(park_data)
+                return data
+            except Exception as e:
+                logger.exception(e)
+                session.rollback()
 
+    def get_park(self, name: str) -> dict:
+        with Session(self.engine) as session:
+            try:
+                result = session.execute(select(Park).filter_by(name=name)).fetchone()
+                return {
+                    'park_id': result[0].park_id,
+                    'api_key': result[0].api_key,
+                    'client': result[0].client,
+                    'session_id': result[0].session_id,
+                    'name': result[0].name
+                }
+            except Exception as e:
+                logger.exception(e)
+                session.rollback()
