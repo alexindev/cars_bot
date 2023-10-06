@@ -11,9 +11,10 @@ class User(Base):
     chat_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     phone: Mapped[str]
     driver_id: Mapped[str]
-    car_id: Mapped[str]
+    car_id: Mapped[str | None]
     is_staff: Mapped[bool]
     full_name: Mapped[str]
+    is_banned: Mapped[bool]
     park: Mapped['Park'] = relationship(back_populates='user')
     park_id: Mapped[int] = mapped_column(ForeignKey('parks.id'))
 
