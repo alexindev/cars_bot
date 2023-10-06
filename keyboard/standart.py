@@ -4,7 +4,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 register_kb = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text='🚖 Стать водитилем | курьером')
+            KeyboardButton(text='🚖 Стать водителем | курьером')
         ],
         [
             KeyboardButton(text='🔑 Авторизация')
