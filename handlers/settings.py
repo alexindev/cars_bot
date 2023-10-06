@@ -16,12 +16,16 @@ async def current_state(callback: types.CallbackQuery):
     user = base.get_user(chat_id=callback.from_user.id)
     if user:
         car_id = user.get('car_id')
-        state = data.get_current_state(car_id=car_id, park_id=user.get('park_id'), session_id=user.get('session_id'))
-        if state:
-            text = get_state_text(state)
-            await callback.message.edit_text(text=text, reply_markup=cancel_kb())
+        if car_id:
+            state = await data.get_current_state(car_id=car_id, park_id=user.get('park_id'),
+                                                 session_id=user.get('session_id'))
+            if state:
+                text = get_state_text(state)
+                await callback.message.edit_text(text=text, reply_markup=cancel_kb())
+            else:
+                await callback.message.edit_text('❌ Ошибка получения данных', reply_markup=cancel_kb())
         else:
-            await callback.message.edit_text('❌ Ошибка получения данных', reply_markup=cancel_kb())
+            await callback.message.edit_text('Недоступно для вашего тарифа', reply_markup=cancel_kb())
     else:
         await callback.message.edit_text('❌ Сначала зарегистрируйтесь /start', reply_markup=cancel_kb())
 
@@ -44,8 +48,8 @@ async def payment_manager(callback: types.CallbackQuery):
         if callback_data == 'off':
             limit = '150000'
             answer = 'безналичные'
-        if data.set_payment(driver_id, limit,  park_id=user.get('park_id'), client=user.get('client'),
-                            api_key=user.get('api_key')):
+        if await data.set_payment(driver_id, limit, park_id=user.get('park_id'), client=user.get('client'),
+                                  api_key=user.get('api_key')):
             await callback.message.edit_text(f'✅ Установлен режим оплаты - {answer}', reply_markup=cancel_kb())
         else:
             await callback.message.edit_text('❌ Ошибка при изменении режима оплаты', reply_markup=cancel_kb())
@@ -67,38 +71,41 @@ async def delivery_manager(callback: types.CallbackQuery):
     user = base.get_user(chat_id=callback.from_user.id)
     if user:
         car_id = user.get('car_id')
-        state: dict = data.get_current_state(car_id=car_id, park_id=user.get('park_id'),
-                                             session_id=user.get('session_id'))
-        if state:
-            categories = state.get('categories')
-            if callback_data == 'on':
-                if 'express' in categories:
-                    await callback.message.edit_text('🤝 Доставка уже включена', reply_markup=cancel_kb())
-                else:
-                    state['categories'].extend(category)
-                    state['amenities'].append('delivery')
-                    status = data.update_category(car_id, state, park_id=user.get('park_id'),
-                                                  session_id=user.get('session_id'))
-                    if status:
-                        await callback.message.edit_text('✅ Доставка включена', reply_markup=cancel_kb())
+        if car_id:
+            state: dict = await data.get_current_state(car_id=car_id, park_id=user.get('park_id'),
+                                                       session_id=user.get('session_id'))
+            if state:
+                categories = state.get('categories')
+                if callback_data == 'on':
+                    if 'express' in categories:
+                        await callback.message.edit_text('🤝 Доставка уже включена', reply_markup=cancel_kb())
                     else:
-                        await callback.message.edit_text('❌ Ошибка изменения данных', reply_markup=cancel_kb())
+                        state['categories'].extend(category)
+                        state['amenities'].append('delivery')
+                        status = await data.update_category(car_id, state, park_id=user.get('park_id'),
+                                                            session_id=user.get('session_id'))
+                        if status:
+                            await callback.message.edit_text('✅ Доставка включена', reply_markup=cancel_kb())
+                        else:
+                            await callback.message.edit_text('❌ Ошибка изменения данных', reply_markup=cancel_kb())
+                else:
+                    if 'express' in categories:
+                        for elem in category:
+                            if elem in state['categories']:
+                                state['categories'].remove(elem)
+                        state['amenities'].remove('delivery')
+                        status = await data.update_category(car_id, state, park_id=user.get('park_id'),
+                                                            session_id=user.get('session_id'))
+                        if status:
+                            await callback.message.edit_text('✅ Доставка выключена', reply_markup=cancel_kb())
+                        else:
+                            await callback.message.edit_text('❌ Ошибка изменения данных', reply_markup=cancel_kb())
+                    else:
+                        await callback.message.edit_text('💔 Доставка уже выключена', reply_markup=cancel_kb())
             else:
-                if 'express' in categories:
-                    for elem in category:
-                        if elem in state['categories']:
-                            state['categories'].remove(elem)
-                    state['amenities'].remove('delivery')
-                    status = data.update_category(car_id, state, park_id=user.get('park_id'),
-                                                  session_id=user.get('session_id'))
-                    if status:
-                        await callback.message.edit_text('✅ Доставка выключена', reply_markup=cancel_kb())
-                    else:
-                        await callback.message.edit_text('❌ Ошибка изменения данных', reply_markup=cancel_kb())
-                else:
-                    await callback.message.edit_text('💔 Доставка уже выключена', reply_markup=cancel_kb())
+                await callback.message.edit_text('❌ Ошибка получения данных', reply_markup=cancel_kb())
         else:
-            await callback.message.edit_text('❌ Ошибка получения данных', reply_markup=cancel_kb())
+            await callback.message.edit_text('Недоступно для вашего тарифа', reply_markup=cancel_kb())
     else:
         await callback.message.edit_text('❌ Сначала зарегистрируйтесь /start', reply_markup=cancel_kb())
 
@@ -118,38 +125,41 @@ async def incity_manager(callback: types.CallbackQuery):
     user = base.get_user(chat_id=callback.from_user.id)
     if user:
         car_id = user.get('car_id')
-        state: dict = data.get_current_state(car_id=car_id, park_id=user.get('park_id'),
-                                             session_id=user.get('session_id'))
-        if state:
-            categories = state.get('categories')
-            if callback_data == 'on':
-                if 'intercity' in categories:
-                    await callback.message.edit_text('🤝 Поездки по межгороду уже включен',
-                                                     reply_markup=cancel_kb())
-                else:
-                    state['categories'].extend(category)
-                    status = data.update_category(car_id, state,  park_id=user.get('park_id'),
-                                                  session_id=user.get('session_id'))
-                    if status:
-                        await callback.message.edit_text('✅ Поездки по межгороду включены',
+        if car_id:
+            state: dict = await data.get_current_state(car_id=car_id, park_id=user.get('park_id'),
+                                                       session_id=user.get('session_id'))
+            if state:
+                categories = state.get('categories')
+                if callback_data == 'on':
+                    if 'intercity' in categories:
+                        await callback.message.edit_text('🤝 Поездки по межгороду уже включен',
                                                          reply_markup=cancel_kb())
                     else:
-                        await callback.message.edit_text('❌ Ошибка изменения данных', reply_markup=cancel_kb())
+                        state['categories'].extend(category)
+                        status = await data.update_category(car_id, state, park_id=user.get('park_id'),
+                                                            session_id=user.get('session_id'))
+                        if status:
+                            await callback.message.edit_text('✅ Поездки по межгороду включены',
+                                                             reply_markup=cancel_kb())
+                        else:
+                            await callback.message.edit_text('❌ Ошибка изменения данных', reply_markup=cancel_kb())
+                else:
+                    if 'intercity' in categories:
+                        state['categories'].remove('intercity')
+                        status = await data.update_category(car_id, state, park_id=user.get('park_id'),
+                                                            session_id=user.get('session_id'))
+                        if status:
+                            await callback.message.edit_text('✅ Поездки по межгороду выключены',
+                                                             reply_markup=cancel_kb())
+                        else:
+                            await callback.message.edit_text('❌ Ошибка изменения данных', reply_markup=cancel_kb())
+                    else:
+                        await callback.message.edit_text('💔 Поездки по межгороду уже выключены',
+                                                         reply_markup=cancel_kb())
             else:
-                if 'intercity' in categories:
-                    state['categories'].remove('intercity')
-                    status = data.update_category(car_id, state,  park_id=user.get('park_id'),
-                                                  session_id=user.get('session_id'))
-                    if status:
-                        await callback.message.edit_text('✅ Поездки по межгороду выключены',
-                                                         reply_markup=cancel_kb())
-                    else:
-                        await callback.message.edit_text('❌ Ошибка изменения данных', reply_markup=cancel_kb())
-                else:
-                    await callback.message.edit_text('💔 Поездки по межгороду уже выключены',
-                                                     reply_markup=cancel_kb())
+                await callback.message.edit_text('❌ Ошибка получения данных', reply_markup=cancel_kb())
         else:
-            await callback.message.edit_text('❌ Ошибка получения данных', reply_markup=cancel_kb())
+            await callback.message.edit_text('Недоступно для вашего тарифа', reply_markup=cancel_kb())
     else:
         await callback.message.edit_text('❌ Сначала зарегистрируйтесь /start', reply_markup=cancel_kb())
 
@@ -163,4 +173,3 @@ def settings_handlers(dp: Dispatcher):
     dp.callback_query.register(payment_manager, F.data.startswith('cash_'))
     dp.callback_query.register(incity_settings, F.data == 'incity')
     dp.callback_query.register(incity_manager, F.data.startswith('incity_'))
-
