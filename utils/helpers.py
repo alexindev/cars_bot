@@ -146,20 +146,7 @@ def get_quality_text(data: dict) -> str:
 
 def get_state_text(data: dict) -> str:
     """ Текст для отображения текущего состояния """
-    categories = {
-        'econom': 'Эконом',
-        'courier': 'Курьер',
-        'intercity': 'Межгород',
-        'express': 'Доставка',
-        'comfort': 'Комфорт',
-        'comfort_plus': 'Комфорт+',
-        'vip': 'VIP',
-        'business': 'Бизнес',
-        'ultimate': 'Premier',
-        'personal_driver': 'Персональный водитель',
-        'maybach': 'Elite',
-        'premium_suv': 'Помощь взрослым'
-    }
+
     categories_text = ', '.join([categories.get(i, '-') for i in data.get('categories', [])])
 
     amenities = {
@@ -278,4 +265,21 @@ def unpaid_orders_text(data: list) -> str:
                      f'🏁 Точка Б: {i.get("address_to")}\n\n')
     else:
         text = '👀 На данный момент неоплаченных заказов нет'
+    return text
+
+
+def registry_preparation_text(data: dict) -> str:
+    """ Текст для подготовки регистрации """
+    careers = {
+        '🚕 Водитель такси': 'Водитель такси',
+        '🚗 Автокурьер': 'Автокурьер',
+        '🚶 Пеший курьер': 'Пеший курьер'
+    }
+    job = careers.get(data.get("career"))
+
+    text = ('Проверьте данные:\n\n'
+            f'Город: {data.get("city")}\n'
+            f'Номер телефона: {data.get("phone")}\n'
+            f'Должность: {job}\n\n'
+            f'Нажмите "Далее", если все верно')
     return text
