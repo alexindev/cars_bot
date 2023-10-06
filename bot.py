@@ -1,3 +1,4 @@
+from keyboard.commands import set_commands
 from loader import dp, bot
 from handlers.admin import admin_handlers
 from handlers.commands import commands_handlers
@@ -10,6 +11,7 @@ from logs.config import logger
 
 async def start_bot():
     """Запуск бота"""
+    await set_commands()
     regisres_handlers(dp)
     user_handlers(dp)
     commands_handlers(dp)
